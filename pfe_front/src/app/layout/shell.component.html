@@ -1,0 +1,83 @@
+<div class="min-h-screen grid grid-cols-[260px_1fr]">
+  <aside class="sticky top-0 h-screen flex flex-col p-4 border-r"
+         style="background: linear-gradient(180deg, var(--surface), var(--surface-2)); border-color: var(--border);">
+    <div class="flex items-center gap-3 px-2 py-3 mb-4">
+      <div class="grid place-items-center w-10 h-10 rounded-xl text-white text-lg font-bold shadow-lg"
+           style="background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 8px 20px var(--ring);">
+        ⛨
+      </div>
+      <div>
+        <div class="font-bold leading-tight">DevSecOps</div>
+        <div class="text-[11px] muted">Container Security</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 flex flex-col gap-0.5">
+      <a routerLink="/dashboard" routerLinkActive="nav-active" class="nav-link"><span class="nav-ico">▦</span> Dashboard</a>
+
+      <div class="nav-group">Images</div>
+      <a routerLink="/images/safe"   routerLinkActive="nav-active" class="nav-link"><span class="nav-ico" style="color: var(--safe)">●</span> SAFE Images</a>
+      <a routerLink="/images/unsafe" routerLinkActive="nav-active" class="nav-link"><span class="nav-ico" style="color: var(--unsafe)">●</span> UNSAFE Images</a>
+
+      <div class="nav-group">Operations</div>
+      <a routerLink="/pipelines"      routerLinkActive="nav-active" class="nav-link"><span class="nav-ico">⛭</span> CI/CD Pipelines</a>
+      <a routerLink="/alerts"         routerLinkActive="nav-active" class="nav-link"><span class="nav-ico">⚠</span> Security Alerts</a>
+      <a routerLink="/infrastructure" routerLinkActive="nav-active" class="nav-link"><span class="nav-ico">▤</span> Infrastructure</a>
+
+      <div class="nav-group">Control</div>
+      <a routerLink="/admin" routerLinkActive="nav-active" class="nav-link"><span class="nav-ico">⚙</span> Admin Panel</a>
+    </nav>
+
+    <div class="px-2 py-3 mono muted">pfe_front · v1.0</div>
+  </aside>
+
+  <div class="flex flex-col min-w-0">
+    <header class="sticky top-0 z-10 flex items-center gap-3 px-6 py-3 border-b backdrop-blur"
+            style="background: color-mix(in srgb, var(--surface) 70%, transparent); border-color: var(--border);">
+      <div class="font-semibold">DevSecOps Dashboard</div>
+      <div class="flex-1"></div>
+      <div class="flex items-center gap-3">
+        <button type="button" class="btn btn-icon"
+                (click)="theme.toggle()"
+                [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+                [title]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+          {{ theme.theme() === 'dark' ? '☀' : '☾' }}
+        </button>
+        @if (auth.user(); as u) {
+          <div class="text-right hidden sm:block leading-tight">
+            <div class="text-sm font-medium">{{ u.username }}</div>
+            <div class="text-[10px] muted uppercase tracking-wider">{{ u.role }}</div>
+          </div>
+          <div class="grid place-items-center w-9 h-9 rounded-full text-white text-sm font-bold"
+               style="background: linear-gradient(135deg, var(--primary), var(--accent));">
+            {{ u.username[0]?.toUpperCase() }}
+          </div>
+        }
+        <button type="button" class="btn" (click)="auth.logout()" title="Sign out">Logout</button>
+      </div>
+    </header>
+    <main class="p-6">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<style>
+  .nav-link {
+    display: flex; align-items: center; gap: .625rem;
+    padding: .55rem .65rem; border-radius: .5rem;
+    color: var(--text-dim); font-size: .875rem;
+    transition: background .15s, color .15s;
+  }
+  .nav-link:hover { background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); }
+  .nav-link.nav-active {
+    color: var(--text);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 22%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+    box-shadow: inset 2px 0 0 var(--primary);
+  }
+  .nav-ico { width: 18px; text-align: center; opacity: .9; }
+  .nav-group {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-mute); padding: .9rem .65rem .25rem;
+  }
+</style>

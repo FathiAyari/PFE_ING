@@ -1,0 +1,56 @@
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Infrastructure</h1>
+    <p class="text-sm muted">VMs, containers, backend services and database health</p>
+  </div>
+  <button class="btn" (click)="load()">↻ Refresh</button>
+</div>
+
+@if (health(); as h) {
+  <div class="card mb-4 flex items-center gap-3"
+       [style.borderColor]="h.healthy ? 'var(--safe)' : 'var(--warn)'"
+       [style.background]="h.healthy
+         ? 'linear-gradient(180deg, color-mix(in srgb, var(--safe) 8%, transparent), var(--surface-2))'
+         : 'linear-gradient(180deg, color-mix(in srgb, var(--warn) 8%, transparent), var(--surface-2))'">
+    <span class="text-lg">{{ h.healthy ? '✓' : '⚠' }}</span>
+    <div>
+      <strong>{{ h.healthy ? 'All systems operational' : 'Some systems require attention' }}</strong>
+      <span class="muted text-sm">· {{ h.up }} / {{ h.total }} nodes UP</span>
+    </div>
+  </div>
+}
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+  @for (n of nodes(); track n.id) {
+    <div class="card">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <div class="font-semibold">{{ n.name }}</div>
+          <div class="mono muted">{{ n.type }} · {{ n.ipAddress }}</div>
+        </div>
+        <span class="badge" [class]="'badge-' + statusClass(n.status)">{{ n.status }}</span>
+      </div>
+
+      <div class="mt-2">
+        <div class="flex justify-between text-xs muted mb-1"><span>CPU</span><span class="mono">{{ n.cpuUsage | number:'1.0-1' }}%</span></div>
+        <div class="bar" [class.bar-warn]="n.cpuUsage>=60 && n.cpuUsage<80" [class.bar-danger]="n.cpuUsage>=80">
+          <span [style.width.%]="n.cpuUsage"></span>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="flex justify-between text-xs muted mb-1"><span>Memory</span><span class="mono">{{ n.memoryUsage | number:'1.0-1' }}%</span></div>
+        <div class="bar" [class.bar-warn]="n.memoryUsage>=60 && n.memoryUsage<80" [class.bar-danger]="n.memoryUsage>=80">
+          <span [style.width.%]="n.memoryUsage"></span>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="flex justify-between text-xs muted mb-1"><span>Disk</span><span class="mono">{{ n.diskUsage | number:'1.0-1' }}%</span></div>
+        <div class="bar" [class.bar-warn]="n.diskUsage>=60 && n.diskUsage<80" [class.bar-danger]="n.diskUsage>=80">
+          <span [style.width.%]="n.diskUsage"></span>
+        </div>
+      </div>
+
+      <div class="muted text-xs mt-3">Host: {{ n.host }} · checked {{ n.lastCheck | date:'shortTime' }}</div>
+    </div>
+  }
+</div>

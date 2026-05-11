@@ -1,0 +1,77 @@
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">SAFE Images</h1>
+    <p class="text-sm muted">Only these images can be deployed to environments</p>
+  </div>
+  <button class="btn" (click)="load()">↻ Refresh</button>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Image</th><th>Tag</th><th>Registry</th><th>Vulnerabilities</th>
+          <th>Risk</th><th>Scanned</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (img of images(); track img.id) {
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <strong>{{ img.name }}</strong>
+                <span class="badge badge-safe">SAFE</span>
+              </div>
+            </td>
+            <td class="mono">{{ img.tag }}</td>
+            <td class="muted mono">{{ img.registry }}</td>
+            <td>{{ img.vulnerabilityCount }}</td>
+            <td>{{ img.riskScore | number:'1.1-1' }} / 10</td>
+            <td class="muted">{{ img.scannedAt | date:'medium' }}</td>
+            <td class="text-right"><button class="btn btn-primary" (click)="open(img)">Deploy</button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="muted text-center py-6">No SAFE images.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (selected(); as img) {
+  <div class="fixed inset-0 z-50 grid place-items-center backdrop-blur-sm"
+       style="background: rgba(0,0,0,.55);"
+       (click)="close()">
+    <div class="card w-[min(480px,92vw)] flex flex-col gap-3" (click)="$event.stopPropagation()">
+      <h3 class="text-base font-semibold m-0">Deploy {{ img.name }}:{{ img.tag }}</h3>
+      <div>
+        <label class="field-label">Environment</label>
+        <select class="select" [(ngModel)]="environment">
+          <option value="dev">dev</option>
+          <option value="staging">staging</option>
+          <option value="prod">prod</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Triggered by</label>
+        <input class="input" [(ngModel)]="actor" />
+      </div>
+      <div>
+        <label class="field-label">Notes</label>
+        <textarea class="textarea" [(ngModel)]="notes" rows="3" placeholder="Optional deployment notes"></textarea>
+      </div>
+      @if (message(); as m) {
+        <div class="rounded-lg px-3 py-2 text-sm"
+             [style.background]="m.type==='ok' ? 'color-mix(in srgb, var(--safe) 14%, transparent)' : 'color-mix(in srgb, var(--unsafe) 14%, transparent)'"
+             [style.color]="m.type==='ok' ? 'var(--safe)' : 'var(--unsafe)'">{{ m.text }}</div>
+      }
+      <div class="flex justify-end gap-2 mt-1">
+        <button class="btn" (click)="close()" [disabled]="busy()">Cancel</button>
+        <button class="btn btn-primary" (click)="deploy()" [disabled]="busy()">
+          {{ busy() ? 'Deploying…' : 'Deploy' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

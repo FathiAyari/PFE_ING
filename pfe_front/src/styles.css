@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+/* dark mode driven by .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------
+   Theme tokens — semantic CSS variables that swap on .dark
+   ------------------------------------------------------------------ */
+:root {
+  /* surfaces */
+  --bg:        #f6f8fc;
+  --surface:   #ffffff;
+  --surface-2: #f1f4fa;
+  --surface-3: #e7ecf5;
+  --border:    #e2e7f0;
+  --ring:      rgba(47, 111, 234, 0.35);
+
+  /* text */
+  --text:      #0f1530;
+  --text-dim:  #4b5575;
+  --text-mute: #7d87a4;
+
+  /* brand */
+  --primary:    #2f6fea;
+  --primary-2:  #1f5dd6;
+  --accent:     #0ea5e9;
+
+  /* semantic */
+  --safe:    #16a34a;
+  --unsafe:  #dc2626;
+  --warn:    #d97706;
+  --info:    #0284c7;
+  --critical:#b91c1c;
+  --high:    #ea580c;
+  --medium:  #ca8a04;
+  --low:     #0284c7;
+
+  /* misc */
+  --shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+  --radial-1: rgba(47, 111, 234, 0.10);
+  --radial-2: rgba(14, 165, 233, 0.08);
+}
+
+.dark {
+  --bg:        #0b1020;
+  --surface:   #0f1530;
+  --surface-2: #161d3f;
+  --surface-3: #1d2650;
+  --border:    #232c5a;
+  --ring:      rgba(79, 140, 255, 0.4);
+
+  --text:      #e6e9f5;
+  --text-dim:  #9aa3c7;
+  --text-mute: #6b7397;
+
+  --primary:    #4f8cff;
+  --primary-2:  #6aa0ff;
+  --accent:     #22d3ee;
+
+  --safe:    #22c55e;
+  --unsafe:  #ef4444;
+  --warn:    #f59e0b;
+  --info:    #38bdf8;
+  --critical:#dc2626;
+  --high:    #f97316;
+  --medium:  #eab308;
+  --low:     #38bdf8;
+
+  --shadow:   0 10px 30px rgba(0, 0, 0, 0.45);
+  --radial-1: rgba(79, 140, 255, 0.18);
+  --radial-2: rgba(34, 211, 238, 0.12);
+}
+
+/* expose tokens as Tailwind colors via @theme inline so utilities pick them up */
+@theme inline {
+  --color-bg:        var(--bg);
+  --color-surface:   var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border:    var(--border);
+  --color-text:      var(--text);
+  --color-text-dim:  var(--text-dim);
+  --color-text-mute: var(--text-mute);
+
+  --color-brand:    var(--primary);
+  --color-brand-2:  var(--primary-2);
+  --color-accent:   var(--accent);
+
+  --color-safe:     var(--safe);
+  --color-unsafe:   var(--unsafe);
+  --color-warn:     var(--warn);
+  --color-info:     var(--info);
+  --color-critical: var(--critical);
+  --color-high:     var(--high);
+  --color-medium:   var(--medium);
+  --color-low:      var(--low);
+
+  --shadow-card: var(--shadow);
+}
+
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 800px at 80% -10%, var(--radial-1), transparent 60%),
+    radial-gradient(900px 700px at -10% 100%, var(--radial-2), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  transition: background-color .25s ease, color .25s ease;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ------------------------------------------------------------------
+   Reusable component classes
+   ------------------------------------------------------------------ */
+@layer components {
+  .card {
+    @apply rounded-xl border p-5;
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    @apply text-xs font-semibold uppercase tracking-wider mb-3;
+    color: var(--text-dim);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition;
+    background: var(--surface-2);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn:hover { background: var(--surface-3); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary {
+    @apply text-white border-transparent shadow-md;
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-danger {
+    @apply text-white border-transparent;
+    background: var(--unsafe);
+  }
+  .btn-icon { @apply h-9 w-9 p-0 rounded-full; }
+
+  .input, .select, .textarea {
+    @apply w-full rounded-lg border px-3 py-2 text-sm transition;
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .input:focus, .select:focus, .textarea:focus {
+    @apply outline-none ring-2;
+    border-color: var(--primary);
+    --tw-ring-color: var(--ring);
+  }
+
+  .field-label {
+    @apply block text-xs font-semibold uppercase tracking-wide mb-1;
+    color: var(--text-dim);
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide;
+  }
+  .badge::before {
+    content: ''; width: .375rem; height: .375rem; border-radius: 9999px; background: currentColor;
+  }
+  .badge-safe,
+  .badge-success,
+  .badge-up      { color: var(--safe);    background: color-mix(in srgb, var(--safe) 14%, transparent); }
+  .badge-unsafe,
+  .badge-failed,
+  .badge-down    { color: var(--unsafe);  background: color-mix(in srgb, var(--unsafe) 14%, transparent); }
+  .badge-running,
+  .badge-info    { color: var(--info);    background: color-mix(in srgb, var(--info) 14%, transparent); }
+  .badge-warn,
+  .badge-degraded{ color: var(--warn);    background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .badge-cancelled{ color: var(--text-mute); background: color-mix(in srgb, var(--text-mute) 18%, transparent); }
+  .badge-critical{ color: var(--critical);background: color-mix(in srgb, var(--critical) 16%, transparent); }
+  .badge-high    { color: var(--high);    background: color-mix(in srgb, var(--high) 16%, transparent); }
+  .badge-medium  { color: var(--medium);  background: color-mix(in srgb, var(--medium) 16%, transparent); }
+  .badge-low     { color: var(--low);     background: color-mix(in srgb, var(--low) 16%, transparent); }
+
+  .bar {
+    @apply relative h-2 w-full overflow-hidden rounded-full;
+    background: var(--surface-3);
+  }
+  .bar > span {
+    @apply absolute inset-y-0 left-0 rounded-full;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+  }
+  .bar.bar-warn   > span { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+  .bar.bar-danger > span { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+
+  .table-wrap { @apply overflow-x-auto; }
+  table.table { @apply w-full text-sm border-separate border-spacing-0; }
+  table.table thead th {
+    @apply text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider;
+    color: var(--text-dim);
+    background: color-mix(in srgb, var(--surface-3) 35%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  table.table tbody td {
+    @apply px-3 py-3 align-middle;
+    border-bottom: 1px solid var(--border);
+  }
+  table.table tbody tr:hover td { background: color-mix(in srgb, var(--text) 4%, transparent); }
+  table.table tbody tr:last-child td { border-bottom: none; }
+
+  .mono { font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, Consolas, monospace; font-size: 12px; }
+  .muted { color: var(--text-mute); }
+}

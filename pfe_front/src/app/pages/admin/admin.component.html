@@ -1,0 +1,90 @@
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Admin Control Panel</h1>
+    <p class="text-sm muted">Trigger SAFE-image deployments and inspect audit logs</p>
+  </div>
+  <button class="btn" (click)="refresh()">↻ Refresh</button>
+</div>
+
+<div class="grid gap-4 lg:grid-cols-3 mb-5">
+  <div class="card lg:col-span-1 flex flex-col gap-3">
+    <div class="card-title !mb-0">Trigger Deployment</div>
+
+    <div>
+      <label class="field-label">SAFE Image</label>
+      <select class="select" [(ngModel)]="selectedImageId">
+        @for (img of safeImages(); track img.id) {
+          <option [ngValue]="img.id">{{ img.name }}:{{ img.tag }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="field-label">Environment</label>
+      <select class="select" [(ngModel)]="environment">
+        <option value="dev">dev</option>
+        <option value="staging">staging</option>
+        <option value="prod">prod</option>
+      </select>
+    </div>
+    <div>
+      <label class="field-label">Triggered by</label>
+      <input class="input" [(ngModel)]="actor" />
+    </div>
+    @if (message(); as m) {
+      <div class="rounded-lg px-3 py-2 text-sm"
+           [style.background]="m.type==='ok' ? 'color-mix(in srgb, var(--safe) 14%, transparent)' : 'color-mix(in srgb, var(--unsafe) 14%, transparent)'"
+           [style.color]="m.type==='ok' ? 'var(--safe)' : 'var(--unsafe)'">{{ m.text }}</div>
+    }
+    <div class="flex justify-end mt-1">
+      <button class="btn btn-primary" (click)="trigger()" [disabled]="busy() || !selectedImageId">
+        {{ busy() ? 'Deploying…' : 'Deploy SAFE Image' }}
+      </button>
+    </div>
+    <div class="muted text-xs mt-1">UNSAFE images are blocked at the backend. See <a routerLink="/images/unsafe" class="underline">UNSAFE Images</a>.</div>
+  </div>
+
+  <div class="card lg:col-span-2">
+    <div class="card-title">Recent Deployments</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Image</th><th>Env</th><th>Status</th><th>By</th><th>When</th></tr></thead>
+        <tbody>
+          @for (d of deployments(); track d.id) {
+            <tr>
+              <td><strong>{{ d.image.name }}</strong>:<span class="mono">{{ d.image.tag }}</span></td>
+              <td><span class="badge badge-info">{{ d.environment }}</span></td>
+              <td><span class="badge" [class]="d.status === 'SUCCESS' ? 'badge-success' : 'badge-failed'">{{ d.status }}</span></td>
+              <td>{{ d.triggeredBy }}</td>
+              <td class="muted">{{ d.deployedAt | date:'medium' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="muted text-center py-6">No deployments yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Audit Log</div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Time</th><th>Action</th><th>Actor</th><th>Target</th><th>Details</th><th>Result</th></tr></thead>
+      <tbody>
+        @for (l of logs(); track l.id) {
+          <tr>
+            <td class="muted">{{ l.timestamp | date:'medium' }}</td>
+            <td class="mono">{{ l.action }}</td>
+            <td>{{ l.actor }}</td>
+            <td class="mono">{{ l.target }}</td>
+            <td>{{ l.details }}</td>
+            <td><span class="badge" [class]="'badge-' + resultClass(l.result)">{{ l.result }}</span></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="muted text-center py-6">No log entries.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

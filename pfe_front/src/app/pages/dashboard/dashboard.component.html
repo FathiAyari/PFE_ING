@@ -1,0 +1,136 @@
+<!-- Page header -->
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Overview</h1>
+    <p class="text-sm muted">Container image security lifecycle at a glance</p>
+  </div>
+  <button class="btn btn-primary" (click)="refresh()">↻ Refresh</button>
+</div>
+
+@if (error()) {
+  <div class="card mb-4" style="border-color: var(--unsafe);">
+    <strong style="color: var(--unsafe)">Error:</strong> {{ error() }}
+  </div>
+}
+
+@if (stats(); as s) {
+  <!-- Stats grid -->
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-5">
+    <div class="card">
+      <div class="card-title">SAFE Images</div>
+      <div class="text-3xl font-bold" style="color: var(--safe);">{{ s.safeImages }}</div>
+      <div class="bar mt-3"><span [style.width.%]="safePct()"></span></div>
+      <div class="text-xs muted mt-2">{{ safePct() }}% of {{ s.totalImages }} total</div>
+    </div>
+    <div class="card">
+      <div class="card-title">UNSAFE Images</div>
+      <div class="text-3xl font-bold" style="color: var(--unsafe);">{{ s.unsafeImages }}</div>
+      <div class="bar bar-danger mt-3"><span [style.width.%]="100 - safePct()"></span></div>
+      <div class="text-xs muted mt-2">read-only, audit-only</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Open Alerts</div>
+      <div class="text-3xl font-bold" style="color: var(--warn);">{{ s.openAlerts }}</div>
+      <div class="text-xs muted mt-2">across all severities</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Deployments</div>
+      <div class="text-3xl font-bold" style="color: var(--info);">{{ s.deployments }}</div>
+      <div class="text-xs muted mt-2">SAFE images only</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pipelines · Success</div>
+      <div class="text-3xl font-bold" style="color: var(--safe);">{{ s.pipelinesSuccess }}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pipelines · Failed</div>
+      <div class="text-3xl font-bold" style="color: var(--unsafe);">{{ s.pipelinesFailed }}</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid gap-4 lg:grid-cols-2 mb-5">
+    <div class="card">
+      <div class="card-title">Alerts by Severity</div>
+      <div class="flex flex-col gap-3">
+        @for (k of ['CRITICAL','HIGH','MEDIUM','LOW']; track k) {
+          <div class="grid grid-cols-[100px_1fr_40px] items-center gap-3">
+            <span class="badge" [class]="'badge-' + k.toLowerCase()">{{ k }}</span>
+            <div class="bar" [class.bar-danger]="k==='CRITICAL'" [class.bar-warn]="k==='HIGH'">
+              <span [style.width.%]="(s.alertsBySeverity[k] || 0) * 100 / (s.openAlerts || 1)"></span>
+            </div>
+            <span class="text-right font-bold">{{ s.alertsBySeverity[k] || 0 }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">SAFE vs UNSAFE</div>
+      <div class="flex items-center gap-6">
+        <div class="grid place-items-center w-36 h-36 rounded-full transition-[background] duration-500"
+             [style.background]="'conic-gradient(var(--safe) 0 ' + safePct() + '%, var(--unsafe) ' + safePct() + '% 100%)'">
+          <div class="grid place-items-center w-24 h-24 rounded-full text-center"
+               style="background: var(--surface);">
+            <div>
+              <div class="text-2xl font-bold" style="color: var(--safe);">{{ safePct() }}%</div>
+              <div class="text-[10px] uppercase tracking-wider muted">SAFE</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2 text-sm">
+          <div class="flex items-center gap-2"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: var(--safe);"></span> SAFE · {{ s.safeImages }}</div>
+          <div class="flex items-center gap-2"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: var(--unsafe);"></span> UNSAFE · {{ s.unsafeImages }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tables row -->
+  <div class="grid gap-4 lg:grid-cols-2">
+    <div class="card">
+      <div class="flex items-center justify-between">
+        <div class="card-title !mb-0">Recent Pipelines</div>
+        <a routerLink="/pipelines" class="text-xs muted hover:underline">View all →</a>
+      </div>
+      <div class="table-wrap mt-3">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Branch</th><th>Status</th><th>Started</th></tr></thead>
+          <tbody>
+            @for (p of pipelines(); track p.id) {
+              <tr>
+                <td class="font-medium">{{ p.name }}</td>
+                <td class="mono">{{ p.branch }}</td>
+                <td><span class="badge" [class]="'badge-' + p.status.toLowerCase()">{{ p.status }}</span></td>
+                <td class="muted">{{ p.startedAt | date:'short' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex items-center justify-between">
+        <div class="card-title !mb-0">Open Security Alerts</div>
+        <a routerLink="/alerts" class="text-xs muted hover:underline">View all →</a>
+      </div>
+      <div class="mt-3 flex flex-col">
+        @if (alerts().length === 0) { <div class="muted text-sm py-3">No open alerts 🎉</div> }
+        @for (a of alerts(); track a.id) {
+          <div class="grid grid-cols-[100px_1fr_auto] items-center gap-3 py-2.5 border-t"
+               style="border-color: var(--border);">
+            <span class="badge" [class]="'badge-' + a.severity.toLowerCase()">{{ a.severity }}</span>
+            <div>
+              <div class="text-sm font-medium">{{ a.title }}</div>
+              <div class="mono muted">{{ a.affectedImage }}</div>
+            </div>
+            <div class="muted text-xs">{{ a.createdAt | date:'shortTime' }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="card">Loading dashboard…</div>
+}

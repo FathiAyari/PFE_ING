@@ -1,0 +1,45 @@
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">CI/CD Pipelines</h1>
+    <p class="text-sm muted">Recent pipeline activity across all branches</p>
+  </div>
+  <button class="btn" (click)="load()">↻ Refresh</button>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-5">
+  <div class="card"><div class="card-title">Success</div><div class="text-3xl font-bold" style="color: var(--safe);">{{ count('SUCCESS') }}</div></div>
+  <div class="card"><div class="card-title">Failed</div><div class="text-3xl font-bold" style="color: var(--unsafe);">{{ count('FAILED') }}</div></div>
+  <div class="card"><div class="card-title">Running</div><div class="text-3xl font-bold" style="color: var(--info);">{{ count('RUNNING') }}</div></div>
+  <div class="card"><div class="card-title">Cancelled</div><div class="text-3xl font-bold muted">{{ count('CANCELLED') }}</div></div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pipeline</th><th>Branch</th><th>Commit</th><th>Triggered By</th>
+          <th>Status</th><th>Duration</th><th>Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of pipelines(); track p.id) {
+          <tr>
+            <td>
+              <div class="font-semibold">{{ p.name }}</div>
+              @if (p.failureStage) { <div class="muted mono">failed at: {{ p.failureStage }}</div> }
+            </td>
+            <td class="mono">{{ p.branch }}</td>
+            <td class="mono muted">{{ p.commitSha }}</td>
+            <td>{{ p.triggeredBy }}</td>
+            <td><span class="badge" [class]="'badge-' + p.status.toLowerCase()">{{ p.status }}</span></td>
+            <td>{{ p.durationSeconds ? p.durationSeconds + 's' : '—' }}</td>
+            <td class="muted">{{ p.startedAt | date:'medium' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="muted text-center py-6">No pipeline runs.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

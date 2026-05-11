@@ -1,0 +1,59 @@
+<div class="min-h-screen grid place-items-center p-6">
+  <div class="absolute top-4 right-4">
+    <button type="button" class="btn btn-icon"
+            (click)="theme.toggle()"
+            [title]="theme.theme()==='dark' ? 'Light mode' : 'Dark mode'">
+      {{ theme.theme()==='dark' ? '☀' : '☾' }}
+    </button>
+  </div>
+
+  <div class="w-[min(440px,92vw)] flex flex-col gap-5">
+    <div class="flex items-center gap-3 justify-center">
+      <div class="grid place-items-center w-12 h-12 rounded-2xl text-white text-xl font-bold shadow-lg"
+           style="background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 12px 28px var(--ring);">⛨</div>
+      <div>
+        <div class="text-xl font-bold leading-tight">DevSecOps</div>
+        <div class="text-xs muted">Cloud Admin Console</div>
+      </div>
+    </div>
+
+    <form class="card flex flex-col gap-3" (submit)="$event.preventDefault(); submit()">
+      <h1 class="text-lg font-semibold m-0">Create cloud admin account</h1>
+      <p class="text-sm muted -mt-2">All accounts have <span class="mono">CLOUD_ADMIN</span> role</p>
+
+      <div>
+        <label class="field-label">Username</label>
+        <input class="input" name="username" autocomplete="username" minlength="3"
+               [(ngModel)]="username" required />
+      </div>
+      <div>
+        <label class="field-label">Email</label>
+        <input class="input" name="email" type="email" autocomplete="email"
+               [(ngModel)]="email" />
+      </div>
+      <div>
+        <label class="field-label">Password</label>
+        <input class="input" name="password" type="password" autocomplete="new-password" minlength="6"
+               [(ngModel)]="password" required />
+      </div>
+      <div>
+        <label class="field-label">Confirm password</label>
+        <input class="input" name="confirm" type="password" autocomplete="new-password" minlength="6"
+               [(ngModel)]="confirm" required />
+      </div>
+
+      @if (error(); as e) {
+        <div class="rounded-lg px-3 py-2 text-sm"
+             style="background: color-mix(in srgb, var(--unsafe) 14%, transparent); color: var(--unsafe);">{{ e }}</div>
+      }
+
+      <button type="submit" class="btn btn-primary w-full justify-center mt-1" [disabled]="busy()">
+        {{ busy() ? 'Creating account…' : 'Create account' }}
+      </button>
+
+      <div class="text-xs muted text-center mt-1">
+        Already have an account? <a routerLink="/login" class="underline">Sign in</a>
+      </div>
+    </form>
+  </div>
+</div>

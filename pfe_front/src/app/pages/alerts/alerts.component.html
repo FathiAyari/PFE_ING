@@ -1,0 +1,56 @@
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Security Alerts</h1>
+    <p class="text-sm muted">Vulnerabilities and runtime detections across the platform</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <div class="inline-flex p-1 rounded-lg" style="background: var(--surface-2); border: 1px solid var(--border);">
+      <button class="btn !border-transparent !shadow-none !bg-transparent !py-1 !px-3"
+              [class.!bg-[var(--primary)]]="filter()==='OPEN'"
+              [class.!text-white]="filter()==='OPEN'"
+              (click)="filter.set('OPEN')">Open</button>
+      <button class="btn !border-transparent !shadow-none !bg-transparent !py-1 !px-3"
+              [class.!bg-[var(--primary)]]="filter()==='ALL'"
+              [class.!text-white]="filter()==='ALL'"
+              (click)="filter.set('ALL')">All</button>
+    </div>
+    <button class="btn btn-icon" (click)="load()">↻</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Severity</th><th>Title</th><th>Affected</th>
+          <th>Source</th><th>CVE</th><th>Created</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of visible(); track a.id) {
+          <tr [class.opacity-60]="a.acknowledged">
+            <td><span class="badge" [class]="'badge-' + a.severity.toLowerCase()">{{ a.severity }}</span></td>
+            <td>
+              <div class="font-medium">{{ a.title }}</div>
+              <div class="muted text-xs">{{ a.description }}</div>
+            </td>
+            <td class="mono">{{ a.affectedImage }}</td>
+            <td>{{ a.source }}</td>
+            <td class="mono">{{ a.cveId || '—' }}</td>
+            <td class="muted">{{ a.createdAt | date:'medium' }}</td>
+            <td class="text-right">
+              @if (!a.acknowledged) {
+                <button class="btn" (click)="acknowledge(a)">Acknowledge</button>
+              } @else {
+                <span class="muted text-xs">✓ acknowledged</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="muted text-center py-6">No alerts.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

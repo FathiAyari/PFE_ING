@@ -1,0 +1,45 @@
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+*.swp
+*.log
+b.txt
+
+# --- Java / Maven (pfe_back) ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.class
+hs_err_pid*
+replay_pid*
+
+# Spring Boot devtools / local
+HELP.md.bak
+
+# --- Node / Angular (pfe_front) ---
+node_modules/
+.angular/
+dist/
+tmp/
+out-tsc/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Angular dev server / build noise
+*.log
+serve.log
+build.log
+
+# --- Env / secrets ---
+.env
+.env.*
+!*.example
+
+# --- Misc generated ---
+*.pid
+*.seed
