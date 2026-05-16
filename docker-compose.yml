@@ -1,0 +1,67 @@
+name: pfe
+
+# All secrets / passwords come from the gitignored `.env` file at repo root.
+# Copy `.env.example` to `.env` and fill in real values before `docker compose up`.
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pfe-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [pfe]
+
+  backend:
+    build:
+      context: ./pfe_back
+      dockerfile: Dockerfile
+    image: pfe/backend:latest
+    container_name: pfe-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+      APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+    ports:
+      - "8080:8080"
+    networks: [pfe]
+
+  frontend:
+    build:
+      context: ./pfe_front
+      dockerfile: Dockerfile
+    image: pfe/frontend:latest
+    container_name: pfe-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+    networks: [pfe]
+
+volumes:
+  mysql_data:
+
+networks:
+  pfe:
+    driver: bridge

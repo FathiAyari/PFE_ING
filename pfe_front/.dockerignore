@@ -1,0 +1,16 @@
+node_modules/
+.angular/
+dist/
+.git/
+.gitignore
+.idea/
+.vscode/
+coverage/
+*.log
+serve.log
+build.log
+.env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore

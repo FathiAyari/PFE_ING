@@ -1,0 +1,14 @@
+target/
+.idea/
+*.iml
+.git/
+.gitignore
+HELP.md
+run.log
+build.log
+*.log
+.env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore

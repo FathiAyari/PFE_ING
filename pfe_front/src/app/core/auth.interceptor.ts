@@ -15,7 +15,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && !req.url.includes('/auth/')) {
+      // Spring Security returns 401 for invalid token and 403 for missing token
+      // on protected endpoints. In both cases the token is stale → re-login.
+      const unauthorized = err.status === 401 || err.status === 403;
+      if (unauthorized && !req.url.includes('/auth/')) {
         auth.logout();
         router.navigate(['/login']);
       }
