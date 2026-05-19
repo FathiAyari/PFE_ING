@@ -30,8 +30,8 @@ env:
   ARM_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  # F2s_v2 also capacity-restricted. Try ESv3 (Gen2, quota=4).
-  TF_VAR_vm_size: 'Standard_E2s_v3'
+  # All D/E/F families capacity-restricted in francecentral; try Av2.
+  TF_VAR_vm_size: 'Standard_A2_v2'
 
 jobs:
   terraform:
