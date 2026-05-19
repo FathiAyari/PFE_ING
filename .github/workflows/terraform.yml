@@ -30,8 +30,8 @@ env:
   ARM_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  # standardDSv5Family quota = 0 on student subs in francecentral; DSv2 usually OK.
-  TF_VAR_vm_size: 'Standard_DS1_v2'
+  # DSv5/Dv5/v6/v7 quota=0; DSv2 & DS_v2 capacity-restricted; trying Dv3.
+  TF_VAR_vm_size: 'Standard_D2_v3'
 
 jobs:
   terraform:
