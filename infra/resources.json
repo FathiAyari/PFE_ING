@@ -73,7 +73,7 @@
       "category": "compute",
       "icon": "🖥️",
       "description": "Ubuntu 24.04 VM with Docker (cloud-init).",
-      "properties": { "size": "Standard_B1s", "image": "ubuntu-24_04-lts", "user": "azureuser" }
+      "properties": { "size": "Standard_D2s_v3", "image": "ubuntu-24_04-lts", "user": "azureuser" }
     }
   ]
 }
