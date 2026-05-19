@@ -1,7 +1,7 @@
 {
   "project": "pfe-devsecops",
   "provider": "azurerm",
-  "location": "australiaeast",
+  "location": "francecentral",
   "resources": [
     {
       "address": "azurerm_resource_group.rg",
@@ -10,7 +10,7 @@
       "category": "compute",
       "icon": "📦",
       "description": "Container for every Azure resource in this stack.",
-      "properties": { "location": "australiaeast" }
+      "properties": { "location": "francecentral" }
     },
     {
       "address": "azurerm_virtual_network.vnet",
