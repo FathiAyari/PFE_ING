@@ -30,8 +30,8 @@ env:
   ARM_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  # DSv5/Dv5/v6/v7 quota=0; DSv2 & DS_v2 capacity-restricted; trying Dv3.
-  TF_VAR_vm_size: 'Standard_D2_v3'
+  # Ubuntu 24.04 is Gen2-only. D2_v3 is Gen1. Use DSv4 (Gen2, quota=4).
+  TF_VAR_vm_size: 'Standard_D2s_v4'
 
 jobs:
   terraform:
