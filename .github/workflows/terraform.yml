@@ -30,8 +30,8 @@ env:
   ARM_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  # B-series is capacity-restricted in francecentral for student subs.
-  TF_VAR_vm_size: 'Standard_D2s_v5'
+  # standardDSv5Family quota = 0 on student subs in francecentral; DSv2 usually OK.
+  TF_VAR_vm_size: 'Standard_DS1_v2'
 
 jobs:
   terraform:
