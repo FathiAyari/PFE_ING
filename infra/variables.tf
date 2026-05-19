@@ -13,7 +13,7 @@ variable "location" {
 variable "vm_size" {
   description = "Azure VM size."
   type        = string
-  default     = "Standard_B1ms"
+  default     = "Standard_B1s"
 }
 
 variable "vm_admin_username" {
