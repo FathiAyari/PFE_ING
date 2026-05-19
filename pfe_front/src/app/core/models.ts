@@ -89,6 +89,27 @@ export interface DashboardStats {
 
 export interface DeployRequest {
   environment: string;
-  triggeredBy: string;
+  triggeredBy?: string;
   notes?: string;
+}
+
+export interface IaCResource {
+  address: string;
+  name: string;
+  type: string;
+  category: 'compute' | 'network' | 'security' | 'registry' | string;
+  icon: string;
+  description: string;
+  status: 'PLANNED' | 'APPLIED' | string;
+  properties: Record<string, string>;
+}
+
+export interface IaCSummary {
+  project: string;
+  provider: string;
+  location: string;
+  stateApplied: boolean;
+  totalResources: number;
+  appliedResources: number;
+  resources: IaCResource[];
 }

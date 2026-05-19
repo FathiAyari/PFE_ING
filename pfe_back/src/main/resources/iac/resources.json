@@ -1,0 +1,79 @@
+{
+  "project": "pfe-devsecops",
+  "provider": "azurerm",
+  "location": "australiaeast",
+  "resources": [
+    {
+      "address": "azurerm_resource_group.rg",
+      "name": "pfe-devsecops-rg",
+      "type": "Resource Group",
+      "category": "compute",
+      "icon": "📦",
+      "description": "Container for every Azure resource in this stack.",
+      "properties": { "location": "australiaeast" }
+    },
+    {
+      "address": "azurerm_virtual_network.vnet",
+      "name": "pfe-devsecops-vnet",
+      "type": "Virtual Network",
+      "category": "network",
+      "icon": "🌐",
+      "description": "Private VNet for the VM and future workloads.",
+      "properties": { "addressSpace": "10.20.0.0/16" }
+    },
+    {
+      "address": "azurerm_subnet.subnet",
+      "name": "pfe-devsecops-subnet",
+      "type": "Subnet",
+      "category": "network",
+      "icon": "🔗",
+      "description": "Single subnet inside the VNet.",
+      "properties": { "cidr": "10.20.1.0/24" }
+    },
+    {
+      "address": "azurerm_network_security_group.nsg",
+      "name": "pfe-devsecops-nsg",
+      "type": "Network Security Group",
+      "category": "security",
+      "icon": "🛡️",
+      "description": "Inbound rules: 22/tcp, 80/tcp, 8080/tcp.",
+      "properties": { "rules": "ssh, http, app" }
+    },
+    {
+      "address": "azurerm_public_ip.pip",
+      "name": "pfe-devsecops-pip",
+      "type": "Public IP",
+      "category": "network",
+      "icon": "📡",
+      "description": "Static public IP attached to the VM NIC.",
+      "properties": { "sku": "Standard", "allocation": "Static" }
+    },
+    {
+      "address": "azurerm_network_interface.nic",
+      "name": "pfe-devsecops-nic",
+      "type": "Network Interface",
+      "category": "network",
+      "icon": "🔌",
+      "description": "VM NIC bridging the subnet + public IP.",
+      "properties": { "privateAllocation": "Dynamic" }
+    },
+    {
+      "address": "azurerm_container_registry.acr",
+      "name": "pfedevsecopsacr<suffix>",
+      "type": "Container Registry",
+      "category": "registry",
+      "icon": "🐳",
+      "description": "Azure Container Registry for app images.",
+      "properties": { "sku": "Basic", "adminEnabled": "true" }
+    },
+    {
+      "address": "azurerm_linux_virtual_machine.vm",
+      "name": "pfe-devsecops-vm",
+      "type": "Linux VM",
+      "category": "compute",
+      "icon": "🖥️",
+      "description": "Ubuntu 24.04 VM with Docker (cloud-init).",
+      "properties": { "size": "Standard_B2s", "image": "ubuntu-24_04-lts", "user": "azureuser" }
+    }
+  ]
+}

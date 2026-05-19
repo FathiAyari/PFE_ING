@@ -8,6 +8,7 @@ import {
   Deployment,
   DeployRequest,
   DockerImage,
+  IaCSummary,
   PipelineRun,
   SecurityAlert,
   SystemNode
@@ -52,4 +53,7 @@ export class ApiService {
 
   // Audit
   getAuditLogs(): Observable<AuditLog[]> { return this.http.get<AuditLog[]>(`${this.base}/audit/logs`); }
+
+  // IaC (Terraform manifest + state)
+  getIaC(): Observable<IaCSummary> { return this.http.get<IaCSummary>(`${this.base}/iac/resources`); }
 }

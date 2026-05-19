@@ -1,0 +1,106 @@
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Infra (IaC)</h1>
+    <p class="text-sm muted">Terraform-defined cloud infrastructure — visualized straight from <span class="mono">infra/resources.json</span>.</p>
+  </div>
+  <div class="flex items-center gap-3">
+    @if (lastRefresh(); as t) {
+      <span class="muted text-xs">Updated {{ t | date:'shortTime' }}</span>
+    }
+    <button class="btn" (click)="refresh()" [disabled]="loading()">
+      {{ loading() ? '…' : '↻' }} Refresh
+    </button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="card mb-4" style="border-color: var(--unsafe);">
+    <strong style="color: var(--unsafe)">Error:</strong> {{ error() }}
+  </div>
+}
+
+@if (summary(); as s) {
+  <!-- top summary cards -->
+  <div class="grid gap-4 md:grid-cols-4 mb-5">
+    <div class="card">
+      <div class="card-title">Project</div>
+      <div class="text-lg font-bold">{{ s.project }}</div>
+      <div class="muted text-xs mono mt-1">{{ s.provider }} · {{ s.location }}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Resources defined</div>
+      <div class="text-3xl font-bold leading-none">{{ s.totalResources }}</div>
+      <div class="muted text-xs mt-1">Across {{ groups().length }} categories</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Applied (terraform state)</div>
+      <div class="flex items-end gap-2">
+        <div class="text-3xl font-bold leading-none">{{ s.appliedResources }}</div>
+        <div class="muted text-sm">/ {{ s.totalResources }}</div>
+      </div>
+      <div class="bar mt-2">
+        <span [style.width.%]="appliedPct()"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">State</div>
+      @if (s.stateApplied) {
+        <span class="badge badge-success">APPLIED</span>
+        <div class="muted text-xs mt-2">Read from <span class="mono">infra/terraform.tfstate</span>.</div>
+      } @else {
+        <span class="badge badge-warn">PLANNED</span>
+        <div class="muted text-xs mt-2">No <span class="mono">terraform.tfstate</span> found. Run <span class="mono">terraform apply</span> to mark resources as applied.</div>
+      }
+    </div>
+  </div>
+
+  <!-- category groups -->
+  @for (g of groups(); track g.key) {
+    <div class="mb-6">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="text-lg font-bold">{{ g.label }}</h2>
+        <span class="muted text-xs">{{ g.items.length }} resource(s)</span>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        @for (r of g.items; track r.address) {
+          <div class="card">
+            <div class="flex items-start gap-3">
+              <div class="grid place-items-center w-11 h-11 rounded-xl text-xl shrink-0"
+                   style="background: var(--surface-2); border: 1px solid var(--border);">
+                {{ r.icon || '▣' }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-semibold truncate">{{ r.name }}</span>
+                  @if (r.status === 'APPLIED') {
+                    <span class="badge badge-success">APPLIED</span>
+                  } @else {
+                    <span class="badge badge-info">PLANNED</span>
+                  }
+                </div>
+                <div class="muted text-xs mono truncate" [title]="r.address">{{ r.address }}</div>
+                <div class="muted text-xs mt-1">{{ r.type }}</div>
+              </div>
+            </div>
+
+            @if (r.description) {
+              <p class="text-sm mt-3">{{ r.description }}</p>
+            }
+
+            @if (keys(r.properties).length) {
+              <dl class="grid grid-cols-[120px_1fr] gap-y-1 text-xs mt-3">
+                @for (k of keys(r.properties); track k) {
+                  <dt class="muted">{{ k }}</dt>
+                  <dd class="mono break-all">{{ r.properties[k] }}</dd>
+                }
+              </dl>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+} @else if (loading()) {
+  <div class="card">Loading IaC manifest…</div>
+}

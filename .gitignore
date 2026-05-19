@@ -40,6 +40,15 @@ build.log
 .env.*
 !*.example
 
+# --- Terraform ---
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/*.tfvars
+!infra/*.tfvars.example
+infra/crash.log
+
 # --- Misc generated ---
 *.pid
 *.seed
