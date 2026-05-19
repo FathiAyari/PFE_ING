@@ -20,7 +20,9 @@ terraform {
   #     -backend-config="key=pfe-devsecops.tfstate"
   # Local runs without these args fall back to a `terraform.tfstate` file
   # in the working dir (which is gitignored).
-  backend "azurerm" {}
+  backend "azurerm" {
+    use_azuread_auth = true
+  }
 }
 
 provider "azurerm" {
