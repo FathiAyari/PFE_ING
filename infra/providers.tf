@@ -20,12 +20,12 @@ terraform {
   #     -backend-config="key=pfe-devsecops.tfstate"
   # Local runs without these args fall back to a `terraform.tfstate` file
   # in the working dir (which is gitignored).
-  backend "azurerm" {
-    use_azuread_auth = true
-  }
+  # Backend auth uses the storage account access key, passed via the
+  # ARM_ACCESS_KEY env var in the GitHub Actions workflow. This avoids
+  # needing any "Storage Blob Data *" RBAC roles on the state SA.
+  backend "azurerm" {}
 }
 
 provider "azurerm" {
   features {}
-  skip_provider_registration = true
 }
