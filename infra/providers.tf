@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+      version = "~> 3.116"
     }
     random = {
       source  = "hashicorp/random"
@@ -27,5 +27,5 @@ terraform {
 
 provider "azurerm" {
   features {}
-  resource_provider_registrations = "none"
+  skip_provider_registration = true
 }
