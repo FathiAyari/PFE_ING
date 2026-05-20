@@ -92,6 +92,7 @@ resource "azurerm_public_ip" "pip" {
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
+  zones               = ["1"]
   tags                = var.tags
 }
 
@@ -131,6 +132,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   size                  = var.vm_size
   admin_username        = var.vm_admin_username
   network_interface_ids = [azurerm_network_interface.nic.id]
+  zone                  = "1"
 
   admin_ssh_key {
     username   = var.vm_admin_username
