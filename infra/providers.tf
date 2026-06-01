@@ -23,7 +23,9 @@ terraform {
   # Backend auth uses the storage account access key, passed via the
   # ARM_ACCESS_KEY env var in the GitHub Actions workflow. This avoids
   # needing any "Storage Blob Data *" RBAC roles on the state SA.
-  backend "azurerm" {}
+  backend "azurerm" {
+    use_azuread_auth = true
+  }
 }
 
 provider "azurerm" {

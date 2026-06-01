@@ -55,9 +55,9 @@ jobs:
       - name: Terraform init (Azure Storage backend)
         run: |
           terraform init -input=false \
-            -backend-config="resource_group_name=tfstate-rg" \
-            -backend-config="storage_account_name=pfetfstate24666" \
-            -backend-config="container_name=tfstate" \
+            -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_BACKEND_SA }}" \
+            -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
             -backend-config="key=pfe-devsecops.tfstate"
 
       - name: Terraform validate
@@ -68,6 +68,7 @@ jobs:
         run: |
           terraform plan -input=false -no-color \
             -var "ssh_public_key=${{ secrets.TF_SSH_PUBLIC_KEY }}" \
+            -var "location=${{ secrets.AZURE_LOCATION }}" \
             -out=tfplan
 
       - name: Terraform apply
@@ -76,13 +77,15 @@ jobs:
           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
         run: |
           terraform apply -input=false -auto-approve \
-            -var "ssh_public_key=${{ secrets.TF_SSH_PUBLIC_KEY }}"
+            -var "ssh_public_key=${{ secrets.TF_SSH_PUBLIC_KEY }}" \
+            -var "location=${{ secrets.AZURE_LOCATION }}"
 
       - name: Terraform destroy
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
         run: |
           terraform destroy -input=false -auto-approve \
-            -var "ssh_public_key=${{ secrets.TF_SSH_PUBLIC_KEY }}"
+            -var "ssh_public_key=${{ secrets.TF_SSH_PUBLIC_KEY }}" \
+            -var "location=${{ secrets.AZURE_LOCATION }}"
 
       - name: Export outputs (apply only)
         if: |
