@@ -113,3 +113,52 @@ export interface IaCSummary {
   appliedResources: number;
   resources: IaCResource[];
 }
+
+// ---- Real-time Azure infra sync ----
+export type AzureChangeType =
+  | 'CREATE' | 'UPDATE' | 'DELETE'
+  | 'STATE_CHANGE' | 'TAG_CHANGE' | 'CONFIG_CHANGE';
+
+export interface AzureResource {
+  id: number;
+  azureId: string;
+  name: string;
+  type: string;
+  kind?: string;
+  resourceGroup?: string;
+  subscriptionId?: string;
+  location?: string;
+  provisioningState?: string;
+  powerState?: string;
+  tags?: string;       // JSON string
+  sku?: string;        // JSON string
+  source?: string;
+  firstSeenAt?: string;
+  lastSeenAt?: string;
+  lastChangedAt?: string;
+  deletedAt?: string;
+}
+
+export interface ResourceChangeMessage {
+  changeType: AzureChangeType;
+  resource: AzureResource;
+}
+
+export interface AzureResourcePage {
+  content: AzureResource[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface SyncRun {
+  id: number;
+  kind: string;
+  status: string;
+  startedAt: string;
+  finishedAt?: string;
+  resourcesSeen?: number;
+  resourcesChanged?: number;
+  correlationId?: string;
+  error?: string;
+}

@@ -98,6 +98,36 @@ jobs:
           cat tf-outputs.json >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+      - name: Notify backend to sync Azure inventory
+        if: |
+          success() && (
+            (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'plan')
+          )
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_WEBHOOK_URL }}
+          HMAC_SECRET: ${{ secrets.INFRA_WEBHOOK_HMAC_SECRET }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$HMAC_SECRET" ]; then
+            echo "Backend webhook not configured (set BACKEND_WEBHOOK_URL + INFRA_WEBHOOK_HMAC_SECRET secrets); skipping."
+            exit 0
+          fi
+          BODY="{\"correlationId\":\"$RUN_ID\",\"runId\":\"$RUN_ID\"}"
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$HMAC_SECRET" -hex | awk '{print $2}')
+          for i in 1 2 3; do
+            echo "Calling backend (attempt $i)..."
+            if curl -fsS -X POST "$BACKEND_URL" \
+                -H "Content-Type: application/json" \
+                -H "X-Hub-Signature-256: sha256=$SIG" \
+                -d "$BODY"; then
+              echo "Backend sync triggered."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Backend webhook failed after 3 attempts." && exit 1
+
       - name: Upload outputs artifact
         if: |
           (github.event_name == 'push' && github.ref == 'refs/heads/main') ||

@@ -1,0 +1,128 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-end gap-4 justify-between">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">Live Azure Infrastructure</h1>
+      <p class="muted text-sm">
+        Real-time inventory of every Azure resource. Updates automatically as
+        Terraform, the Azure Portal, or anyone else changes the cloud state.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center gap-2 text-sm">
+        <span class="w-2 h-2 rounded-full"
+              [class.bg-emerald-500]="connected()"
+              [class.bg-zinc-500]="!connected()"></span>
+        {{ connected() ? 'Live' : 'Connecting…' }}
+      </span>
+      <button class="btn" (click)="refresh()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-4 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col">
+      <label class="text-xs muted mb-1">Search name</label>
+      <input class="input" [(ngModel)]="filterQ" (keyup.enter)="refresh()" placeholder="vm, nic, …" />
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs muted mb-1">Resource type</label>
+      <input class="input" [(ngModel)]="filterType" (keyup.enter)="refresh()" placeholder="Microsoft.Compute/virtualMachines" />
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs muted mb-1">Resource group</label>
+      <input class="input" [(ngModel)]="filterRg" (keyup.enter)="refresh()" placeholder="pfe-devsecops-rg" />
+    </div>
+    <label class="inline-flex items-center gap-2 text-sm">
+      <input type="checkbox" [(ngModel)]="showDeleted" /> Show deleted
+    </label>
+    <button class="btn btn-primary" (click)="refresh()">Apply</button>
+  </div>
+
+  <!-- Resource grid / table -->
+  <div class="card overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center gap-2" style="border-color: var(--border);">
+      <div class="font-semibold">Resources</div>
+      <div class="muted text-xs">{{ filtered().length }} shown</div>
+    </div>
+    @if (loadError(); as err) {
+      <div class="mx-4 mt-4 rounded-md border px-3 py-2 text-sm" style="border-color: var(--unsafe); color: var(--unsafe); background: color-mix(in srgb, var(--unsafe) 10%, transparent);">
+        {{ err }}
+      </div>
+    }
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left muted">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Type</th>
+            <th class="px-4 py-2">RG</th>
+            <th class="px-4 py-2">Location</th>
+            <th class="px-4 py-2">State</th>
+            <th class="px-4 py-2">Last changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of filtered(); track r.azureId) {
+            <tr class="row" [class]="flashFor(r.azureId)">
+              <td class="px-4 py-2 font-medium">{{ r.name }}</td>
+              <td class="px-4 py-2 mono text-xs">{{ shortType(r.type) }}</td>
+              <td class="px-4 py-2">{{ r.resourceGroup }}</td>
+              <td class="px-4 py-2">{{ r.location }}</td>
+              <td class="px-4 py-2">
+                <span class="badge" [class]="badgeClass(r)">{{ badgeLabel(r) }}</span>
+              </td>
+              <td class="px-4 py-2 mono text-xs muted">{{ r.lastChangedAt | date:'medium' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="px-4 py-8 text-center muted">
+              No resources yet. Run Terraform apply or wait for the next sync.
+              <div class="text-xs mt-2">
+                If Azure credentials are not configured on the backend, this page stays empty in DB-only mode.
+              </div>
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sync runs -->
+  <div class="card overflow-hidden">
+    <div class="px-4 py-3 border-b font-semibold" style="border-color: var(--border);">
+      Sync runs
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left muted">
+          <tr>
+            <th class="px-4 py-2">Kind</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Started</th>
+            <th class="px-4 py-2">Finished</th>
+            <th class="px-4 py-2">Seen</th>
+            <th class="px-4 py-2">Changed</th>
+            <th class="px-4 py-2">Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (run of runs(); track run.id) {
+            <tr>
+              <td class="px-4 py-2 mono text-xs">{{ run.kind }}</td>
+              <td class="px-4 py-2">{{ run.status }}</td>
+              <td class="px-4 py-2 mono text-xs muted">{{ run.startedAt | date:'shortTime' }}</td>
+              <td class="px-4 py-2 mono text-xs muted">{{ run.finishedAt | date:'shortTime' }}</td>
+              <td class="px-4 py-2">{{ run.resourcesSeen ?? '—' }}</td>
+              <td class="px-4 py-2">{{ run.resourcesChanged ?? '—' }}</td>
+              <td class="px-4 py-2 text-xs" style="color: var(--unsafe);">{{ run.error }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="px-4 py-6 text-center muted">No sync runs yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

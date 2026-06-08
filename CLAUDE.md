@@ -32,6 +32,10 @@ Manages **Docker images classified SAFE or UNSAFE**:
   - `SPRING_JPA_HIBERNATE_DDL_AUTO`
   - `APP_JWT_SECRET` (≥32 bytes; defaults to a committed random 48-byte base64 dev secret if unset)
   - `APP_JWT_EXPIRATION_MS`
+  - **Azure / real-time infra sync** (all optional — leave blank for DB-only mode):
+    - `APP_AZURE_TENANT_ID`, `APP_AZURE_CLIENT_ID`, `APP_AZURE_CLIENT_SECRET`, `APP_AZURE_SUBSCRIPTION_ID`, `APP_AZURE_RESOURCE_GROUP`
+    - `APP_INFRA_POLL_ENABLED` (default `true`), `APP_INFRA_POLL_RG_SECONDS` (default `30`)
+    - `APP_INFRA_WEBHOOK_SECRET` (must match the GitHub repo secret `INFRA_WEBHOOK_HMAC_SECRET`)
 - **Seed data**: `com.pfe.back.config.DataSeeder` (`CommandLineRunner`) populates 7 images, 6 pipeline runs, 5 alerts, 7 system nodes, and seed audit entries on first start. Idempotent (skips if `images.count() > 0`).
 - **Security**: `com.pfe.back.config.SecurityConfig` — **stateless JWT auth**. CSRF off, sessions off, CORS to `http://localhost:4200`. `/api/auth/login` and `/api/auth/register` are public; everything else under `/api/**` requires `Authorization: Bearer <token>`. The H2 console (`/h2-console/**`) is open in dev.
 - **Auth module**:
@@ -58,8 +62,57 @@ Manages **Docker images classified SAFE or UNSAFE**:
   - `GET /api/infrastructure/nodes`, `/api/infrastructure/health`
   - `GET /api/deployments`, `POST /api/deployments/images/{imageId}` (body: `DeployRequest`)
   - `GET /api/audit/logs`
+  - **Real-time Azure infra sync** (see "Real-time Azure infra sync" below):
+    - `GET /api/infra/resources?type=&rg=&state=&q=&page=&size=` — paginated search
+    - `GET /api/infra/resources/{id}`, `GET /api/infra/resources/{id}/history`
+    - `GET /api/infra/sync/runs`
+    - `POST /api/infra/sync/trigger` (HMAC-protected, called by GitHub Actions)
+    - `POST /api/azure/events` (Azure Event Grid webhook + validation handshake)
 - `com.pfe.back.dto` — records w/ `jakarta.validation` (`DeployRequest`, `DashboardStats`, **`LoginRequest`, `RegisterRequest`, `AuthResponse`**).
-- `com.pfe.back.config` — `SecurityConfig`, `DataSeeder`.
+- `com.pfe.back.config` — `SecurityConfig`, `DataSeeder`, **`WebSocketConfig`** (STOMP at `/ws`, broker `/topic/**`).
+- **`com.pfe.back.azure`** — `AzureProperties` (`@ConfigurationProperties("app.azure")`), `AzureCredentialsProvider` (`ClientSecretCredential` + `AzureProfile`), `AzureResourceGraphClient` (Kusto sweeps with `@Retryable`). Soft-disables when `app.azure.*` is empty so the app still boots without Azure creds.
+- **`com.pfe.back.infra`** — real-time Azure inventory engine:
+  - `entity/` — `AzureResourceEntity` (idempotent on `azureId`, soft-deletes via `deletedAt`), `AzureResourceHistoryEntity` (`CREATE/UPDATE/DELETE/STATE_CHANGE/TAG_CHANGE/CONFIG_CHANGE` with JSON before/after), `VmStateEventEntity`, `SyncRunEntity`, `ProcessedEventEntity` (Event Grid dedupe key).
+  - `repository/` — paginated search query on `AzureResourceRepository`.
+  - `service/ResourceUpsertService` — **single transactional ingestion path** used by every source (Resource Graph poll, Event Grid, Terraform hook). Diffs JSON, appends history, broadcasts STOMP messages on `/topic/resources` and `/topic/vm-status`.
+  - `service/ResourceSyncService` — `@Scheduled(fixedDelayString = "${app.infra.poll.rg-seconds:30}000")` Resource Graph sweep + public `runFullSync()` for the Terraform hook. Soft-deletes resources missing from the latest sweep.
+  - `util/HmacVerifier` — constant-time SHA-256 HMAC for `/api/infra/sync/trigger`.
+
+### Real-time Azure infra sync
+
+Centralised inventory + change-stream for every Azure resource. Three ingestion paths feed one upsert pipeline:
+
+1. **Periodic Resource Graph poll** (`@Scheduled`, every `app.infra.poll.rg-seconds`, default 30s) — full inventory sweep, source of truth for drift detection. Soft-deletes resources gone from Azure.
+2. **Terraform GitHub Actions hook** — `.github/workflows/terraform.yml` posts an HMAC-signed JSON payload to `/api/infra/sync/trigger` after a successful `apply`/`destroy`. Backend immediately runs a full sync. Requires repo secrets `BACKEND_WEBHOOK_URL` + `INFRA_WEBHOOK_HMAC_SECRET` (which must match `APP_INFRA_WEBHOOK_SECRET`).
+3. **Azure Event Grid webhook** at `/api/azure/events` — handles the EG validation handshake on first subscription, dedupes via `processed_event(event_id)`, then triggers a targeted sync.
+
+Every change flows through `ResourceUpsertService.upsert(...)` which is the **only place** that writes to `azure_resource`, appends to `azure_resource_history`, and publishes to STOMP. New endpoints/sources should reuse it instead of writing entities directly.
+
+`PfeBackApplication` is annotated `@EnableScheduling`, `@EnableAsync`, `@EnableRetry`. `SecurityConfig` permits `/api/azure/events`, `/api/infra/sync/trigger`, and `/ws/**` (HMAC + STOMP-level concerns guard them).
+
+Required Maven deps (Boot 4 needs explicit version on `spring-retry`):
+
+- `org.springframework.boot:spring-boot-starter-websocket`
+- `com.azure:azure-identity` (1.13.3)
+- `com.azure.resourcemanager:azure-resourcemanager` (2.43.0)
+- `com.azure.resourcemanager:azure-resourcemanager-resourcegraph` (1.0.0 — newer versions aren't on Maven Central yet)
+- `org.springframework.retry:spring-retry` **with explicit version `2.0.10`**
+- `org.springframework:spring-aspects`
+
+Application properties (all overridable via `APP_*` env vars):
+
+```properties
+app.azure.tenant-id=${APP_AZURE_TENANT_ID:}
+app.azure.client-id=${APP_AZURE_CLIENT_ID:}
+app.azure.client-secret=${APP_AZURE_CLIENT_SECRET:}
+app.azure.subscription-id=${APP_AZURE_SUBSCRIPTION_ID:}
+app.azure.resource-group=${APP_AZURE_RESOURCE_GROUP:}
+app.infra.poll.enabled=${APP_INFRA_POLL_ENABLED:true}
+app.infra.poll.rg-seconds=${APP_INFRA_POLL_RG_SECONDS:30}
+app.infra.webhook-secret=${APP_INFRA_WEBHOOK_SECRET:change-me-in-prod}
+```
+
+Leaving `app.azure.*` empty puts the app in **DB-only mode** (Azure SDK clients log a warning and stay dormant) — useful for local dev without cloud creds. Full plan + testing checklist live in `docs/REALTIME_INFRA_PLAN.md`.
 
 ### Commands (from `pfe_back/`)
 
@@ -84,14 +137,17 @@ Manages **Docker images classified SAFE or UNSAFE**:
     - `/pipelines` — recent CI/CD runs with status badges
     - `/alerts` — open/all toggle, acknowledge action
     - `/infrastructure` — node cards w/ CPU/mem/disk bars
+    - `/infra-live` — **real-time Azure inventory** (live STOMP feed; rows flash on insert/update/delete; sync-run history)
+    - `/infra` — Terraform IaC summary (read from `iac/resources.json`)
     - `/admin` — trigger SAFE deploy + audit log + recent deployments
   - All page components are lazy-loaded standalone components.
 - **Auth**:
   - `src/app/core/auth.service.ts` — signal-based (`token`, `user`, `isAuthenticated`); persists to `localStorage('pfe-token', 'pfe-user')`. Methods: `login`, `register`, `me`, `logout`.
   - `src/app/core/auth.interceptor.ts` — adds `Authorization: Bearer <token>` to every request; on **401 OR 403** (not from `/auth/`), calls `logout()` and redirects to `/login`. (Spring Security returns 403 when the token is missing entirely, 401 when it's invalid — both mean "session is dead".)
   - `src/app/core/auth.guard.ts` — `authGuard` and `guestGuard`.
-- **API client**: `src/app/core/api.service.ts` (single injectable using `inject(HttpClient)`); models in `src/app/core/models.ts`.
-- **API base URL**: two environments — `environment.ts` (`http://localhost:8080/api`, used by `ng serve`) and `environment.production.ts` (`/api`, used by `ng build --configuration production` so the SPA goes through nginx). The swap is wired via `fileReplacements` in `angular.json`.
+- **API client**: `src/app/core/api.service.ts` (single injectable using `inject(HttpClient)`); models in `src/app/core/models.ts`. Domain-specific services live alongside it: **`infra.service.ts`** (`/api/infra/resources*`, `/sync/runs`) and **`realtime.service.ts`** (single `@stomp/rx-stomp` connection over SockJS to `${environment.wsUrl}`, exposes `resourceChanges$()` and `vmStatus$()` typed Observables; JWT goes into the STOMP `CONNECT` headers).
+- **API base URL + WS URL**: two environments — `environment.ts` (`apiBaseUrl: 'http://localhost:8080/api'`, `wsUrl: 'http://localhost:8080/ws'`, used by `ng serve`) and `environment.production.ts` (`apiBaseUrl: '/api'`, `wsUrl: '/ws'`, used by `ng build --configuration production` so the SPA goes through nginx). The swap is wired via `fileReplacements` in `angular.json`. `nginx.conf` proxies both `/api/` and `/ws` (with `Upgrade`/`Connection: upgrade` headers) to `backend:8080`.
+- **Realtime deps** (in `package.json`): `@stomp/rx-stomp`, `sockjs-client`, `@types/sockjs-client`. Both are CommonJS; `angular.json` whitelists them via `allowedCommonJsDependencies` to silence the optimization-bailout warning.
 - **Theming**:
   - `src/styles.css` imports Tailwind (`@import "tailwindcss";`) and defines a custom dark variant (`@custom-variant dark (&:where(.dark, .dark *))`).
   - Theme tokens are CSS variables under `:root` (light) and `.dark` (dark), exposed to Tailwind via `@theme inline` so utilities like `bg-surface`, `text-text-dim`, `border-border` resolve to the active theme.

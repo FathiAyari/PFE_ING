@@ -1,7 +1,11 @@
 package com.pfe.back.config;
 
 import com.pfe.back.entity.*;
+import com.pfe.back.infra.entity.AzureResourceEntity;
+import com.pfe.back.infra.entity.SyncRunEntity;
 import com.pfe.back.repository.*;
+import com.pfe.back.infra.repository.AzureResourceRepository;
+import com.pfe.back.infra.repository.SyncRunRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +26,8 @@ public class DataSeeder implements CommandLineRunner {
     private final AuditLogRepository audit;
     private final UserRepository users;
     private final PasswordEncoder encoder;
+    private final AzureResourceRepository azureResources;
+    private final SyncRunRepository syncRuns;
 
     @Override
     public void run(String... args) {
@@ -36,6 +42,7 @@ public class DataSeeder implements CommandLineRunner {
                     .createdAt(Instant.now())
                     .build());
         }
+
 
         if (images.count() > 0) return;
         Instant now = Instant.now();

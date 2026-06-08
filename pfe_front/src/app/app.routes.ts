@@ -25,8 +25,7 @@ export const routes: Routes = [
       { path: 'images/unsafe', loadComponent: () => import('./pages/unsafe-images/unsafe-images.component').then(m => m.UnsafeImagesComponent), title: 'UNSAFE Images' },
       { path: 'pipelines',     loadComponent: () => import('./pages/pipelines/pipelines.component').then(m => m.PipelinesComponent), title: 'Pipelines' },
       { path: 'alerts',        loadComponent: () => import('./pages/alerts/alerts.component').then(m => m.AlertsComponent), title: 'Security Alerts' },
-      { path: 'infrastructure',loadComponent: () => import('./pages/infrastructure/infrastructure.component').then(m => m.InfrastructureComponent), title: 'Infrastructure' },
-      { path: 'infra',         loadComponent: () => import('./pages/infra/infra.component').then(m => m.InfraComponent), title: 'Infra (IaC)' },
+      { path: 'infra-live',    loadComponent: () => import('./pages/infra-live/infra-live.component').then(m => m.InfraLiveComponent), title: 'Live Infrastructure' },
       { path: 'admin',         loadComponent: () => import('./pages/admin/admin.component').then(m => m.AdminComponent), title: 'Admin' }
     ]
   },
