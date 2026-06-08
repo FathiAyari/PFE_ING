@@ -113,11 +113,16 @@ jobs:
             echo "Backend webhook not configured (set BACKEND_WEBHOOK_URL + INFRA_WEBHOOK_HMAC_SECRET secrets); skipping."
             exit 0
           fi
+          WEBHOOK_URL="${BACKEND_URL%/}"
+          case "$WEBHOOK_URL" in
+            */api/infra/sync/trigger) ;;
+            *) WEBHOOK_URL="$WEBHOOK_URL/api/infra/sync/trigger" ;;
+          esac
           BODY="{\"correlationId\":\"$RUN_ID\",\"runId\":\"$RUN_ID\"}"
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$HMAC_SECRET" -hex | awk '{print $2}')
           for i in 1 2 3; do
             echo "Calling backend (attempt $i)..."
-            if curl -fsS -X POST "$BACKEND_URL" \
+            if curl -fsS -X POST "$WEBHOOK_URL" \
                 -H "Content-Type: application/json" \
                 -H "X-Hub-Signature-256: sha256=$SIG" \
                 -d "$BODY"; then

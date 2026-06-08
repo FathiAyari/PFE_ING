@@ -68,7 +68,7 @@ Tables (entities under `com.pfe.back.infra.entity`):
 
 ### M5 — Terraform workflow integration
 
-`.github/workflows/terraform.yml` post-apply step posts an HMAC-signed payload to `${{ secrets.BACKEND_WEBHOOK_URL }}`.
+`.github/workflows/terraform.yml` post-apply step posts an HMAC-signed payload to `${{ secrets.BACKEND_WEBHOOK_URL }}`. The secret may be either the backend base URL (for example `https://abc123.ngrok-free.app`) or the full endpoint (`https://abc123.ngrok-free.app/api/infra/sync/trigger`); the workflow normalizes both forms to `POST /api/infra/sync/trigger`.
 
 ### M6 — Angular live UI
 
@@ -89,7 +89,7 @@ Tables (entities under `com.pfe.back.infra.entity`):
 |---|---|
 | `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `AZURE_SUBSCRIPTION_ID` | Already used by Terraform; reused by backend |
 | `INFRA_WEBHOOK_HMAC_SECRET` | Shared secret between workflow and backend |
-| `BACKEND_WEBHOOK_URL` | Public URL of the backend, e.g. `https://api.example.com/api/infra/sync/trigger` |
+| `BACKEND_WEBHOOK_URL` | Public backend URL, either base URL (`https://api.example.com`) or full webhook URL (`https://api.example.com/api/infra/sync/trigger`) |
 
 ## Backend env vars (docker-compose.yml `backend.environment`)
 
