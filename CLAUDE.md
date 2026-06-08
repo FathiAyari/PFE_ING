@@ -109,10 +109,10 @@ app.azure.subscription-id=${APP_AZURE_SUBSCRIPTION_ID:}
 app.azure.resource-group=${APP_AZURE_RESOURCE_GROUP:}
 app.infra.poll.enabled=${APP_INFRA_POLL_ENABLED:true}
 app.infra.poll.rg-seconds=${APP_INFRA_POLL_RG_SECONDS:30}
-app.infra.webhook-secret=${APP_INFRA_WEBHOOK_SECRET:change-me-in-prod}
+app.infra.webhook-secret=${APP_INFRA_WEBHOOK_SECRET:pfeDevSecOpsWebhookSecret32CharsExact}
 ```
 
-Leaving `app.azure.*` empty puts the app in **DB-only mode** (Azure SDK clients log a warning and stay dormant) — useful for local dev without cloud creds. Full plan + testing checklist live in `docs/REALTIME_INFRA_PLAN.md`.
+Leaving `app.azure.*` empty puts the app in **DB-only mode** (Azure SDK clients log a warning and stay dormant) — useful for local dev without cloud creds. Full runtime flow lives in `docs/WORKFLOW.md`.
 
 ### Commands (from `pfe_back/`)
 
@@ -136,9 +136,7 @@ Leaving `app.azure.*` empty puts the app in **DB-only mode** (Azure SDK clients 
     - `/images/unsafe` — read-only table with risk bars
     - `/pipelines` — recent CI/CD runs with status badges
     - `/alerts` — open/all toggle, acknowledge action
-    - `/infrastructure` — node cards w/ CPU/mem/disk bars
     - `/infra-live` — **real-time Azure inventory** (live STOMP feed; rows flash on insert/update/delete; sync-run history)
-    - `/infra` — Terraform IaC summary (read from `iac/resources.json`)
     - `/admin` — trigger SAFE deploy + audit log + recent deployments
   - All page components are lazy-loaded standalone components.
 - **Auth**:

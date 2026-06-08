@@ -199,9 +199,13 @@ GitHub → repo → **Settings → Secrets and variables → Actions → New rep
 | `TF_BACKEND_CONTAINER` | `tfstate` |
 | `AZURE_LOCATION` | `swedencentral` |
 | `TF_SSH_PUBLIC_KEY` | the `ssh-rsa …` line from step 2 |
+| `BACKEND_WEBHOOK_URL` | Public backend URL (ngrok base URL or full `/api/infra/sync/trigger` endpoint) |
+| `INFRA_WEBHOOK_HMAC_SECRET` | HMAC secret used by workflow to sign webhook payloads |
 
 > Print them in Cloud Shell with `echo "$VAR"` — never paste them into chat
 > or commit them to the repo.
+
+For local backend testing via ngrok, start your backend on `8080`, run `ngrok http 8080`, and set `BACKEND_WEBHOOK_URL` to the ngrok URL. The workflow now normalizes both base and full endpoint forms.
 
 ---
 
