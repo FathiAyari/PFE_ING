@@ -25,6 +25,12 @@ export class InfraLiveComponent implements OnInit, OnDestroy {
   readonly loadError = signal<string | null>(null);
   readonly flashIds = signal<Record<string, string>>({}); // azureId -> css class
 
+  // Detail drawer
+  readonly selected = signal<AzureResource | null>(null);
+  readonly history = signal<any[]>([]);
+  readonly historyLoading = signal<boolean>(false);
+  readonly historyError = signal<string | null>(null);
+
   // Filters
   filterType = '';
   filterRg = '';
@@ -73,6 +79,32 @@ export class InfraLiveComponent implements OnInit, OnDestroy {
   triggerSweep(): void {
     // Public manual refresh button (kept for future HMAC-protected manual trigger).
     this.refresh();
+  }
+
+  select(r: AzureResource): void {
+    this.selected.set(r);
+    this.history.set([]);
+    this.historyError.set(null);
+    this.historyLoading.set(true);
+    this.infraSvc.history(r.id).subscribe({
+      next: h => { this.history.set(h || []); this.historyLoading.set(false); },
+      error: (err: HttpErrorResponse) => {
+        this.historyLoading.set(false);
+        this.historyError.set(`Failed to load history (HTTP ${err.status || 'unknown'}).`);
+      }
+    });
+  }
+
+  closeDetail(): void {
+    this.selected.set(null);
+    this.history.set([]);
+    this.historyError.set(null);
+  }
+
+  prettyJson(raw?: string | null): string {
+    if (!raw) return '';
+    try { return JSON.stringify(JSON.parse(raw), null, 2); }
+    catch { return raw; }
   }
 
   shortType(t?: string): string {

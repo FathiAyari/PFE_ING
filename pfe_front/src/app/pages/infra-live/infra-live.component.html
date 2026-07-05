@@ -62,11 +62,15 @@
             <th class="px-4 py-2">Location</th>
             <th class="px-4 py-2">State</th>
             <th class="px-4 py-2">Last changed</th>
+            <th class="px-4 py-2">Details</th>
           </tr>
         </thead>
         <tbody>
           @for (r of filtered(); track r.azureId) {
-            <tr class="row" [class]="flashFor(r.azureId)">
+            <tr class="row clickable"
+                [class]="flashFor(r.azureId)"
+                [class.selected]="selected()?.azureId === r.azureId"
+                (click)="select(r)">
               <td class="px-4 py-2 font-medium">{{ r.name }}</td>
               <td class="px-4 py-2 mono text-xs">{{ shortType(r.type) }}</td>
               <td class="px-4 py-2">{{ r.resourceGroup }}</td>
@@ -75,9 +79,13 @@
                 <span class="badge" [class]="badgeClass(r)">{{ badgeLabel(r) }}</span>
               </td>
               <td class="px-4 py-2 mono text-xs muted">{{ r.lastChangedAt | date:'medium' }}</td>
+              <td class="px-4 py-2 text-right">
+                <button type="button" class="btn btn-icon" title="Details"
+                        (click)="$event.stopPropagation(); select(r)">›</button>
+              </td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="px-4 py-8 text-center muted">
+            <tr><td colspan="7" class="px-4 py-8 text-center muted">
               No resources yet. Run Terraform apply or wait for the next sync.
               <div class="text-xs mt-2">
                 If Azure credentials are not configured on the backend, this page stays empty in DB-only mode.
@@ -126,3 +134,102 @@
     </div>
   </div>
 </div>
+
+<!-- Detail drawer -->
+@if (selected(); as r) {
+  <div class="drawer-backdrop" (click)="closeDetail()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true">
+    <header class="drawer-head">
+      <div class="min-w-0">
+        <div class="text-xs muted mono truncate">{{ shortType(r.type) }}</div>
+        <div class="text-lg font-semibold truncate">{{ r.name }}</div>
+      </div>
+      <button type="button" class="btn btn-icon" (click)="closeDetail()" title="Close">✕</button>
+    </header>
+
+    <div class="drawer-body space-y-5">
+      <section>
+        <div class="field-label">Overview</div>
+        <dl class="kv">
+          <dt>State</dt><dd><span class="badge" [class]="badgeClass(r)">{{ badgeLabel(r) }}</span></dd>
+          <dt>Resource group</dt><dd>{{ r.resourceGroup || '—' }}</dd>
+          <dt>Location</dt><dd>{{ r.location || '—' }}</dd>
+          <dt>Kind</dt><dd>{{ r.kind || '—' }}</dd>
+          <dt>Subscription</dt><dd class="mono text-xs truncate">{{ r.subscriptionId || '—' }}</dd>
+          <dt>Source</dt><dd>{{ r.source || '—' }}</dd>
+          <dt>First seen</dt><dd class="mono text-xs">{{ r.firstSeenAt | date:'medium' }}</dd>
+          <dt>Last seen</dt><dd class="mono text-xs">{{ r.lastSeenAt | date:'medium' }}</dd>
+          <dt>Last changed</dt><dd class="mono text-xs">{{ r.lastChangedAt | date:'medium' }}</dd>
+          @if (r.deletedAt) {
+            <dt>Deleted</dt><dd class="mono text-xs" style="color: var(--unsafe);">{{ r.deletedAt | date:'medium' }}</dd>
+          }
+        </dl>
+        <div class="mt-2">
+          <div class="field-label">Azure ID</div>
+          <div class="mono text-xs break-all">{{ r.azureId }}</div>
+        </div>
+      </section>
+
+      @if (r.tags) {
+        <section>
+          <div class="field-label">Tags</div>
+          <pre class="code">{{ prettyJson(r.tags) }}</pre>
+        </section>
+      }
+      @if (r.sku) {
+        <section>
+          <div class="field-label">SKU</div>
+          <pre class="code">{{ prettyJson(r.sku) }}</pre>
+        </section>
+      }
+
+      <section>
+        <div class="flex items-center justify-between">
+          <div class="field-label mb-0">Change history</div>
+          <span class="muted text-xs">{{ history().length }} entries</span>
+        </div>
+        @if (historyLoading()) {
+          <div class="muted text-sm mt-2">Loading history…</div>
+        } @else if (historyError()) {
+          <div class="mt-2 rounded-md border px-3 py-2 text-sm"
+               style="border-color: var(--unsafe); color: var(--unsafe); background: color-mix(in srgb, var(--unsafe) 10%, transparent);">
+            {{ historyError() }}
+          </div>
+        } @else {
+          <ol class="timeline mt-2">
+            @for (h of history(); track h.id) {
+              <li>
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="badge" [class]="'badge-' + (h.changeType || 'unknown').toLowerCase()">
+                    {{ h.changeType }}
+                  </span>
+                  <span class="mono text-xs muted">{{ h.changedAt | date:'medium' }}</span>
+                </div>
+                @if (h.summary) {
+                  <div class="text-sm mt-1">{{ h.summary }}</div>
+                }
+                @if (h.afterJson || h.beforeJson) {
+                  <details class="mt-1">
+                    <summary class="text-xs muted cursor-pointer">diff</summary>
+                    @if (h.beforeJson) {
+                      <div class="field-label mt-2">before</div>
+                      <pre class="code">{{ prettyJson(h.beforeJson) }}</pre>
+                    }
+                    @if (h.afterJson) {
+                      <div class="field-label mt-2">after</div>
+                      <pre class="code">{{ prettyJson(h.afterJson) }}</pre>
+                    }
+                  </details>
+                }
+              </li>
+            } @empty {
+              <li class="muted text-sm">No history yet.</li>
+            }
+          </ol>
+        }
+      </section>
+    </div>
+  </aside>
+}
+
+
