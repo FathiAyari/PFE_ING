@@ -42,16 +42,57 @@ Important env vars:
 
 - DB: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
 - JWT: `APP_JWT_SECRET`, `APP_JWT_EXPIRATION_MS`
-- Azure sync: `APP_AZURE_TENANT_ID`, `APP_AZURE_CLIENT_ID`, `APP_AZURE_CLIENT_SECRET`, `APP_AZURE_SUBSCRIPTION_ID`, `APP_AZURE_RESOURCE_GROUP`
+- Azure sync (required in every mode): `APP_AZURE_TENANT_ID`, `APP_AZURE_SUBSCRIPTION_ID`, `APP_AZURE_RESOURCE_GROUP`
+- Azure sync (Docker / CI only): `APP_AZURE_CLIENT_ID`, `APP_AZURE_CLIENT_SECRET`
 - Webhook HMAC: `APP_INFRA_WEBHOOK_SECRET`
 
 `APP_INFRA_WEBHOOK_SECRET` must match GitHub Actions secret `INFRA_WEBHOOK_HMAC_SECRET`.
 
+## Azure Authentication (DefaultAzureCredential)
+
+The backend authenticates to Azure through `DefaultAzureCredential`, so the
+same code runs in every environment. The auth source depends on what env vars
+are present at startup:
+
+| Environment | Wins in the chain | What you configure |
+|---|---|---|
+| Laptop (`mvnw`) | `AzureCliCredential` (uses `az login` cache) | 3 non-secret IDs + `az login` — **no client secret on disk** |
+| IDE | `IntelliJCredential` / VS Code plugin | Sign in via the Azure plugin |
+| Docker Compose | `EnvironmentCredential` | 4 `APP_AZURE_*` vars via `.env` (including client secret) |
+| GitHub Actions | `EnvironmentCredential` | Same 4 vars via `secrets.AZURE_*` |
+| Prod on Azure (App Service / AKS / VM) | `ManagedIdentityCredential` | Assign a Managed Identity with Reader — **no secret anywhere** |
+
+If `APP_AZURE_CLIENT_ID` **and** `APP_AZURE_CLIENT_SECRET` are both set, the
+code short-circuits to an explicit `ClientSecretCredential` (Docker/CI path).
+Otherwise it falls through the chain (laptop/prod path).
+
+Leaving `APP_AZURE_TENANT_ID` or `APP_AZURE_SUBSCRIPTION_ID` empty disables
+the Azure integration entirely — the backend still boots (DB-only mode), just
+without the real-time infra sync.
+
 ## Run Locally
 
 ```powershell
+# One-time: sign in with your Azure account
+az login
+az account set --subscription <sub-id>
+
+# Then, in any PowerShell window:
 Push-Location "C:\Users\fathi\OneDrive\Desktop\PFE\pfe_back"
 .\mvnw.cmd spring-boot:run
+```
+
+At startup you should see:
+
+```
+Azure auth: DefaultAzureCredential (az login / MI / IDE), tenant …, subscription …
+Resource Graph client ready
+```
+
+And after each scheduled sweep (every 30 s):
+
+```
+✅ azure_resource table filled: 7 resources upserted, 0 soft-deleted (kind=RG_DELTA, runId=…)
 ```
 
 ## Verify Quickly

@@ -70,7 +70,7 @@ Manages **Docker images classified SAFE or UNSAFE**:
     - `POST /api/azure/events` (Azure Event Grid webhook + validation handshake)
 - `com.pfe.back.dto` — records w/ `jakarta.validation` (`DeployRequest`, `DashboardStats`, **`LoginRequest`, `RegisterRequest`, `AuthResponse`**).
 - `com.pfe.back.config` — `SecurityConfig`, `DataSeeder`, **`WebSocketConfig`** (STOMP at `/ws`, broker `/topic/**`).
-- **`com.pfe.back.azure`** — `AzureProperties` (`@ConfigurationProperties("app.azure")`), `AzureCredentialsProvider` (`ClientSecretCredential` + `AzureProfile`), `AzureResourceGraphClient` (Kusto sweeps with `@Retryable`). Soft-disables when `app.azure.*` is empty so the app still boots without Azure creds.
+- **`com.pfe.back.azure`** — `AzureProperties` (`@ConfigurationProperties("app.azure")`), `AzureCredentialsProvider` (uses `DefaultAzureCredential` by default; falls back to an explicit `ClientSecretCredential` when both `APP_AZURE_CLIENT_ID` + `APP_AZURE_CLIENT_SECRET` are set — so laptops use `az login`, Docker/CI use the SP, Azure prod uses Managed Identity), `AzureResourceGraphClient` (Kusto sweeps with `@Retryable`). Soft-disables when tenant + subscription are empty so the app still boots without Azure creds.
 - **`com.pfe.back.infra`** — real-time Azure inventory engine:
   - `entity/` — `AzureResourceEntity` (idempotent on `azureId`, soft-deletes via `deletedAt`), `AzureResourceHistoryEntity` (`CREATE/UPDATE/DELETE/STATE_CHANGE/TAG_CHANGE/CONFIG_CHANGE` with JSON before/after), `VmStateEventEntity`, `SyncRunEntity`, `ProcessedEventEntity` (Event Grid dedupe key).
   - `repository/` — paginated search query on `AzureResourceRepository`.
