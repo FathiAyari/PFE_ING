@@ -67,6 +67,8 @@ public class ResourceSyncService {
             run.setStatus(Status.OK);
             run.setResourcesSeen(seen);
             run.setResourcesChanged(changed);
+            log.info("✅ azure_resource table filled: {} resources upserted, {} soft-deleted (kind={}, runId={})",
+                    seen, removed, kind, run.getId());
         } catch (Exception e) {
             log.error("Sync run failed: {}", e.getMessage(), e);
             run.setStatus(Status.ERROR);

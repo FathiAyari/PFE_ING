@@ -24,9 +24,9 @@ public class AzureProperties {
     private String resourceGroup = "";
 
     public boolean isConfigured() {
-        return !tenantId.isBlank()
-                && !clientId.isBlank()
-                && !clientSecret.isBlank()
-                && !subscriptionId.isBlank();
+        // Minimal viable config: tenant + subscription. Client id/secret are
+        // only required for explicit service-principal auth; developer laptops
+        // authenticate through DefaultAzureCredential (az login / IDE / MI).
+        return !tenantId.isBlank() && !subscriptionId.isBlank();
     }
 }
