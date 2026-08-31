@@ -28,6 +28,7 @@ public class DataSeeder implements CommandLineRunner {
     private final PasswordEncoder encoder;
     private final AzureResourceRepository azureResources;
     private final SyncRunRepository syncRuns;
+    private final ApplicationRepository applications;
 
     @Override
     public void run(String... args) {
@@ -41,6 +42,50 @@ public class DataSeeder implements CommandLineRunner {
                     .enabled(true)
                     .createdAt(Instant.now())
                     .build());
+        }
+
+        // ---- Sample onboarding requests (idempotent, independent of images) ----
+        if (applications.count() == 0) {
+            Application ready = Application.builder()
+                    .name("PeopleOps")
+                    .description("HR management platform (employees, leave, payroll). Stores PII.")
+                    .team("HR Platform Squad")
+                    .repositoryUrl("github.com/sopra-hr/peopleops")
+                    .contactEmail("peopleops-lead@sopra-hr.com")
+                    .deploymentType(DeploymentType.CONTAINER_APP)
+                    .database(DatabaseType.POSTGRESQL)
+                    .needsContainerRegistry(true)
+                    .needsKeyVault(true)
+                    .environment(AppEnvironment.PRODUCTION)
+                    .status(ApplicationStatus.READY)
+                    .applicationCode("APP-001")
+                    .integrationToken("pfe_seededPeopleOpsTokenExample01")
+                    .createdAt(Instant.now().minus(2, ChronoUnit.DAYS))
+                    .decidedAt(Instant.now().minus(2, ChronoUnit.DAYS).plus(3, ChronoUnit.HOURS))
+                    .decidedBy("admin")
+                    .build();
+            ready.getResources().add(res(ready, "RESOURCE_GROUP", "peopleops-rg"));
+            ready.getResources().add(res(ready, "CONTAINER_REGISTRY", "peopleopsacr.azurecr.io"));
+            ready.getResources().add(res(ready, "CONTAINER_APP", "peopleops-api"));
+            ready.getResources().add(res(ready, "POSTGRESQL", "peopleops-db"));
+            ready.getResources().add(res(ready, "KEY_VAULT", "peopleops-kv"));
+
+            Application pending = Application.builder()
+                    .name("RecruitPro")
+                    .description("Applicant tracking system for recruitment.")
+                    .team("Talent Acquisition")
+                    .repositoryUrl("github.com/sopra-hr/recruitpro")
+                    .contactEmail("recruitpro-lead@sopra-hr.com")
+                    .deploymentType(DeploymentType.AKS)
+                    .database(DatabaseType.POSTGRESQL)
+                    .needsContainerRegistry(true)
+                    .needsKeyVault(true)
+                    .environment(AppEnvironment.DEVELOPMENT)
+                    .status(ApplicationStatus.PENDING)
+                    .createdAt(Instant.now().minus(3, ChronoUnit.HOURS))
+                    .build();
+
+            applications.saveAll(List.of(ready, pending));
         }
 
 
@@ -175,5 +220,13 @@ public class DataSeeder implements CommandLineRunner {
                 .details("Blocked deployment of UNSAFE image to prod").result("DENIED")
                 .timestamp(now.minus(40, ChronoUnit.MINUTES)).build()
         ));
+    }
+
+    private ApplicationResource res(Application app, String type, String identifier) {
+        return ApplicationResource.builder()
+                .application(app)
+                .resourceType(type)
+                .identifier(identifier)
+                .build();
     }
 }

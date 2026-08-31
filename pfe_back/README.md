@@ -14,6 +14,12 @@ Spring Boot 4 REST backend for authentication, DevSecOps domain APIs, and real-t
 
 - Auth (`/api/auth/login`, `/api/auth/register`, `/api/auth/me`)
 - Domain APIs (images, pipelines, alerts, deployments, audit)
+- Application onboarding:
+  - `POST /api/applications` (public — developers submit a request, no login)
+  - `GET /api/applications`, `GET /api/applications/pending`, `GET /api/applications/{id}`
+  - `POST /api/applications/{id}/approve` — simulates provisioning, issues an
+    Application ID + integration token, marks READY, and **emails the developer**
+  - `POST /api/applications/{id}/reject`
 - Live infra APIs:
   - `GET /api/infra/resources`
   - `GET /api/infra/resources/{id}`
@@ -45,8 +51,40 @@ Important env vars:
 - Azure sync (required in every mode): `APP_AZURE_TENANT_ID`, `APP_AZURE_SUBSCRIPTION_ID`, `APP_AZURE_RESOURCE_GROUP`
 - Azure sync (Docker / CI only): `APP_AZURE_CLIENT_ID`, `APP_AZURE_CLIENT_SECRET`
 - Webhook HMAC: `APP_INFRA_WEBHOOK_SECRET`
+- Email (onboarding notifications): `APP_MAIL_ENABLED`, `APP_MAIL_FROM`, `APP_PUBLIC_URL`, `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`
 
 `APP_INFRA_WEBHOOK_SECRET` must match GitHub Actions secret `INFRA_WEBHOOK_HMAC_SECRET`.
+
+## Email Notifications
+
+When an admin **approves** an application, `ApplicationService.approve()` calls
+`MailService.send(...)` to email the request's **contact email** the onboarding
+details: Application ID, integration token, portal URL, the registered resource
+list, and a quick integration guide. The email never contains Azure credentials.
+
+- `MailService` runs `@Async` and **never throws** — a bad SMTP config logs an
+  error but does not roll back the approval.
+- **Disabled by default** (`APP_MAIL_ENABLED=false`): emails are logged as
+  `[MAIL DISABLED] Would send to …` instead of sent — handy for local dev with
+  no mail server.
+- To actually send, enable SMTP via the repo-root `.env` file (read by
+  `docker-compose.yml`). For Gmail, use a 16-char **App Password** (requires
+  2-Step Verification), not your normal password:
+
+```dotenv
+# .env  (gitignored)
+APP_MAIL_ENABLED=true
+APP_MAIL_FROM=PFE DevSecOps <you@gmail.com>
+APP_PUBLIC_URL=http://localhost:4200
+SPRING_MAIL_HOST=smtp.gmail.com
+SPRING_MAIL_PORT=587
+SPRING_MAIL_USERNAME=you@gmail.com
+SPRING_MAIL_PASSWORD=your16charapppass
+```
+
+Then `docker compose up -d --build` (or, for a local `mvnw` run, export the same
+vars in your shell before `.\mvnw.cmd spring-boot:run`).
+
 
 ## Azure Authentication (DefaultAzureCredential)
 

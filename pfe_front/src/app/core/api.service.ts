@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AuditLog,
+  Application,
+  ApplicationRequest,
+  ApplicationStatus,
   DashboardStats,
   Deployment,
   DeployRequest,
@@ -56,4 +59,25 @@ export class ApiService {
 
   // IaC (Terraform manifest + state)
   getIaC(): Observable<IaCSummary> { return this.http.get<IaCSummary>(`${this.base}/iac/resources`); }
+
+  // Applications (onboarding)
+  getApplications(status?: ApplicationStatus): Observable<Application[]> {
+    const q = status ? `?status=${status}` : '';
+    return this.http.get<Application[]>(`${this.base}/applications${q}`);
+  }
+  getPendingApplications(): Observable<Application[]> {
+    return this.http.get<Application[]>(`${this.base}/applications/pending`);
+  }
+  getApplication(id: number): Observable<Application> {
+    return this.http.get<Application>(`${this.base}/applications/${id}`);
+  }
+  submitApplication(req: ApplicationRequest): Observable<Application> {
+    return this.http.post<Application>(`${this.base}/applications`, req);
+  }
+  approveApplication(id: number, actor = 'admin'): Observable<Application> {
+    return this.http.post<Application>(`${this.base}/applications/${id}/approve`, { actor });
+  }
+  rejectApplication(id: number, reason: string, actor = 'admin'): Observable<Application> {
+    return this.http.post<Application>(`${this.base}/applications/${id}/reject`, { actor, reason });
+  }
 }

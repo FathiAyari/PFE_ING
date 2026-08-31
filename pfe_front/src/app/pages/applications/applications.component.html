@@ -1,0 +1,153 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-end gap-4 justify-between">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">Applications</h1>
+      <p class="muted text-sm">
+        Every Sopra HR application must be onboarded into PFE before it can use
+        cloud resources. Submit a request; a PFE admin reviews and approves it.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a routerLink="/applications/requests" class="btn">Review Requests</a>
+      <a routerLink="/request-application" class="btn btn-primary" target="_blank">＋ Public Request Form</a>
+    </div>
+  </div>
+
+  <!-- Stat chips -->
+  <div class="flex flex-wrap gap-3">
+    <div class="card px-4 py-3"><div class="muted text-xs">Total</div><div class="text-xl font-bold">{{ apps().length }}</div></div>
+    <div class="card px-4 py-3"><div class="muted text-xs">Pending</div><div class="text-xl font-bold">{{ pendingCount() }}</div></div>
+    <div class="card px-4 py-3"><div class="muted text-xs">Ready</div><div class="text-xl font-bold">{{ readyCount() }}</div></div>
+  </div>
+
+  <!-- Applications table -->
+  <div class="card overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center gap-2" style="border-color: var(--border);">
+      <div class="font-semibold">Registered Applications</div>
+      <div class="muted text-xs">{{ apps().length }} total</div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left muted">
+          <tr>
+            <th class="px-4 py-2">Application</th>
+            <th class="px-4 py-2">Team</th>
+            <th class="px-4 py-2">Deployment</th>
+            <th class="px-4 py-2">Environment</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Code</th>
+            <th class="px-4 py-2">Requested</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of apps(); track a.id) {
+            <tr class="border-t" style="border-color: var(--border);">
+              <td class="px-4 py-2 font-medium">{{ a.name }}</td>
+              <td class="px-4 py-2">{{ a.team || '—' }}</td>
+              <td class="px-4 py-2 mono text-xs">{{ a.deploymentType }}</td>
+              <td class="px-4 py-2">{{ a.environment }}</td>
+              <td class="px-4 py-2"><span class="badge" [class]="'badge-' + statusClass(a.status)">{{ a.status }}</span></td>
+              <td class="px-4 py-2 mono text-xs">{{ a.applicationCode || '—' }}</td>
+              <td class="px-4 py-2 mono text-xs muted">{{ a.createdAt | date:'short' }}</td>
+              <td class="px-4 py-2 text-right">
+                <button class="btn btn-icon" title="Details" (click)="view(a)">›</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="px-4 py-8 text-center muted">
+              No applications yet. Developers submit requests via the public
+              <a routerLink="/request-application" class="underline">request form</a>.
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- Detail drawer -->
+@if (selected(); as a) {
+  <div class="drawer-backdrop" (click)="closeDetail()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true">
+    <header class="drawer-head">
+      <div class="min-w-0">
+        <div class="text-xs muted">{{ a.applicationCode || 'Application' }}</div>
+        <div class="text-lg font-semibold truncate">{{ a.name }}</div>
+      </div>
+      <span class="badge" [class]="'badge-' + statusClass(a.status)">{{ a.status }}</span>
+      <button type="button" class="btn btn-icon" (click)="closeDetail()" title="Close">✕</button>
+    </header>
+
+    <div class="drawer-body space-y-5">
+      <section>
+        <div class="field-label">General</div>
+        <dl class="kv">
+          <dt>Description</dt><dd>{{ a.description || '—' }}</dd>
+          <dt>Team</dt><dd>{{ a.team || '—' }}</dd>
+          <dt>Repository</dt><dd class="mono text-xs">{{ a.repositoryUrl || '—' }}</dd>
+          <dt>Contact</dt><dd class="mono text-xs">{{ a.contactEmail || '—' }}</dd>
+          <dt>Environment</dt><dd>{{ a.environment }}</dd>
+          <dt>Deployment</dt><dd>{{ a.deploymentType }}</dd>
+          <dt>Database</dt><dd>{{ a.database }}</dd>
+          <dt>Requested</dt><dd class="mono text-xs">{{ a.createdAt | date:'medium' }}</dd>
+          @if (a.decidedAt) {
+            <dt>Decided</dt><dd class="mono text-xs">{{ a.decidedAt | date:'medium' }} by {{ a.decidedBy }}</dd>
+          }
+        </dl>
+      </section>
+
+      @if (a.status === 'REJECTED' && a.rejectionReason) {
+        <section>
+          <div class="field-label">Rejection Reason</div>
+          <div class="rounded-md border px-3 py-2 text-sm"
+               style="border-color: var(--unsafe); color: var(--unsafe);">{{ a.rejectionReason }}</div>
+        </section>
+      }
+
+      @if (a.status === 'READY') {
+        <section>
+          <div class="field-label">Integration Credentials</div>
+          <dl class="kv">
+            <dt>Application ID</dt>
+            <dd class="flex items-center gap-2">
+              <span class="mono">{{ a.applicationCode }}</span>
+              <button class="btn btn-icon" title="Copy" (click)="copy(a.applicationCode)">⧉</button>
+            </dd>
+            <dt>Integration Token</dt>
+            <dd class="flex items-center gap-2 min-w-0">
+              <span class="mono text-xs break-all">{{ a.integrationToken }}</span>
+              <button class="btn btn-icon" title="Copy" (click)="copy(a.integrationToken)">⧉</button>
+            </dd>
+          </dl>
+          <p class="muted text-xs mt-2">
+            Use these in the app's CI/CD pipeline to authenticate with PFE. Azure
+            credentials are never shared.
+          </p>
+        </section>
+      }
+
+      <section>
+        <div class="field-label">Azure Resources ({{ a.resources.length }})</div>
+        @if (a.resources.length) {
+          <table class="w-full text-sm">
+            <thead class="text-left muted"><tr><th class="py-1">Type</th><th class="py-1">Identifier</th></tr></thead>
+            <tbody>
+              @for (r of a.resources; track r.id) {
+                <tr class="border-t" style="border-color: var(--border);">
+                  <td class="py-1 mono text-xs">{{ r.resourceType }}</td>
+                  <td class="py-1 mono text-xs">{{ r.identifier }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <div class="muted text-sm">No resources registered yet (registered on approval).</div>
+        }
+      </section>
+    </div>
+  </aside>
+}
+

@@ -51,6 +51,14 @@ services:
       APP_INFRA_POLL_ENABLED:    ${APP_INFRA_POLL_ENABLED:-true}
       APP_INFRA_POLL_RG_SECONDS: ${APP_INFRA_POLL_RG_SECONDS:-30}
       APP_INFRA_WEBHOOK_SECRET:  ${APP_INFRA_WEBHOOK_SECRET:-change-me-in-prod}
+      # Email / SMTP (onboarding notifications). Leave APP_MAIL_ENABLED=false to log-only.
+      APP_MAIL_ENABLED:     ${APP_MAIL_ENABLED:-false}
+      APP_MAIL_FROM:        ${APP_MAIL_FROM:-PFE DevSecOps <no-reply@pfe.local>}
+      APP_PUBLIC_URL:       ${APP_PUBLIC_URL:-http://localhost:4200}
+      SPRING_MAIL_HOST:     ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT:     ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
     ports:
       - "8080:8080"
     networks: [pfe]

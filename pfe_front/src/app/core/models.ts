@@ -162,3 +162,51 @@ export interface SyncRun {
   correlationId?: string;
   error?: string;
 }
+
+// ---- Application onboarding ----
+export type DeploymentType = 'VM' | 'CONTAINER_APP' | 'AKS';
+export type DatabaseType = 'POSTGRESQL' | 'NONE';
+export type AppEnvironment = 'DEVELOPMENT' | 'TEST' | 'PRODUCTION';
+export type ApplicationStatus = 'PENDING' | 'PROVISIONING' | 'READY' | 'REJECTED';
+
+export interface ApplicationResource {
+  id: number;
+  resourceType: string;
+  identifier: string;
+}
+
+export interface Application {
+  id: number;
+  name: string;
+  description?: string;
+  team?: string;
+  repositoryUrl?: string;
+  contactEmail?: string;
+  deploymentType: DeploymentType;
+  database: DatabaseType;
+  needsContainerRegistry: boolean;
+  needsKeyVault: boolean;
+  environment: AppEnvironment;
+  status: ApplicationStatus;
+  rejectionReason?: string;
+  applicationCode?: string;
+  integrationToken?: string;
+  createdAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
+  resources: ApplicationResource[];
+}
+
+export interface ApplicationRequest {
+  name: string;
+  description?: string;
+  team?: string;
+  repositoryUrl?: string;
+  contactEmail?: string;
+  deploymentType: DeploymentType;
+  database: DatabaseType;
+  needsContainerRegistry: boolean;
+  needsKeyVault: boolean;
+  environment: AppEnvironment;
+}
+

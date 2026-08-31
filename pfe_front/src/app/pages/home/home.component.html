@@ -1,0 +1,80 @@
+<div class="min-h-screen flex flex-col" style="background: linear-gradient(160deg, var(--surface), var(--surface-2));">
+  <!-- Top bar -->
+  <header class="flex items-center gap-3 px-6 py-4">
+    <div class="grid place-items-center w-10 h-10 rounded-xl text-white text-lg font-bold shadow-lg"
+         style="background: linear-gradient(135deg, var(--primary), var(--accent));">⛨</div>
+    <div>
+      <div class="font-bold leading-tight">PFE</div>
+      <div class="text-[11px] muted">Cloud Governance Platform</div>
+    </div>
+    <div class="flex-1"></div>
+    <button type="button" class="btn btn-icon" (click)="theme.toggle()"
+            [title]="theme.theme()==='dark' ? 'Light mode' : 'Dark mode'">
+      {{ theme.theme()==='dark' ? '☀' : '☾' }}
+    </button>
+    <a routerLink="/login" class="btn">Sign in</a>
+  </header>
+
+  <!-- Hero -->
+  <section class="px-6 py-16 md:py-24 max-w-4xl mx-auto text-center">
+    <div class="inline-block mb-4 px-3 py-1 rounded-full text-xs font-semibold"
+         style="background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary);">
+      DevSecOps &amp; Cloud Governance
+    </div>
+    <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
+      Onboard, secure and monitor every application in one place
+    </h1>
+    <p class="muted text-lg max-w-2xl mx-auto mb-8">
+      PFE is Sopra HR Software's central control plane. Developers request cloud
+      infrastructure, administrators approve it, and every pipeline, image and
+      deployment is monitored — with security baked in.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <a routerLink="/request-application" class="btn btn-primary text-base px-6 py-3">＋ Request an Application</a>
+      <a routerLink="/login" class="btn text-base px-6 py-3">Sign in to PFE</a>
+    </div>
+    <p class="muted text-xs mt-4">No account needed to request — an admin reviews every submission.</p>
+  </section>
+
+  <!-- Features -->
+  <section class="px-6 pb-16 max-w-6xl mx-auto w-full">
+    <h2 class="text-center text-2xl font-bold mb-8">What PFE does</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (f of features; track f.title) {
+        <div class="card p-5">
+          <div class="text-2xl mb-2">{{ f.icon }}</div>
+          <div class="font-semibold mb-1">{{ f.title }}</div>
+          <p class="muted text-sm">{{ f.text }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="px-6 pb-20 max-w-5xl mx-auto w-full">
+    <h2 class="text-center text-2xl font-bold mb-8">How onboarding works</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      @for (s of steps; track s.n) {
+        <div class="card p-5">
+          <div class="grid place-items-center w-9 h-9 rounded-full text-white font-bold mb-3"
+               style="background: linear-gradient(135deg, var(--primary), var(--accent));">{{ s.n }}</div>
+          <div class="font-semibold mb-1">{{ s.title }}</div>
+          <p class="muted text-sm">{{ s.text }}</p>
+        </div>
+      }
+    </div>
+
+    <div class="text-center mt-10">
+      <a routerLink="/request-application" class="btn btn-primary text-base px-6 py-3">Get started — request now</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-auto px-6 py-6 border-t text-center" style="border-color: var(--border);">
+    <div class="muted text-xs">
+      PFE · DevSecOps &amp; Cloud Governance · Sopra HR Software ·
+      <a routerLink="/login" class="underline">Admin sign in</a>
+    </div>
+  </footer>
+</div>
+

@@ -20,11 +20,23 @@ Manages **Docker images classified SAFE or UNSAFE**:
 - **UNSAFE** images are **read-only** — deployment is rejected at the service layer (`DeploymentService.deploy`) and the attempt is recorded in the audit log with `result=DENIED`.
 - All deployment attempts (allowed and denied) flow through `AuditLogService.log(...)`.
 
+### Application onboarding
+
+Central "request a new application" workflow (provisioning is **simulated** — no real Terraform run):
+
+- Developers submit a request via the **public** `POST /api/applications` (no login) — captured as an `Application` in `PENDING`.
+- Admins review under `/applications/requests` and **approve** or **reject**. On approve, `ApplicationService.approve()`:
+  1. Derives Azure resource names from the app slug and registers them as `ApplicationResource` rows (simulated Terraform outputs — no cloud call).
+  2. Issues an Application ID (`APP-00N`) + integration token (`pfe_…`), sets status `READY`.
+  3. Logs the action via `AuditLogService.log(...)`.
+  4. **Emails the developer** (`Application.contactEmail`) via `MailService` with the Application ID, integration token, portal URL, resource list, and a quick integration guide. The email **never** contains Azure credentials.
+- `MailService.send(...)` is `@Async` and **never throws** — a mail failure is logged, not propagated, so approvals never roll back. When `app.mail.enabled=false` (default) or no `JavaMailSender` is configured, it logs `[MAIL DISABLED] Would send to …` instead of sending (local-dev friendly). Enable real sending by setting the `APP_MAIL_*` / `SPRING_MAIL_*` values in `.env` (read by `docker-compose.yml`); Gmail needs a 16-char App Password.
+
 ## Backend: `pfe_back`
 
 - **Stack**: Spring Boot **4.0.6**, **Java 17**, Maven wrapper (`mvnw.cmd` on Windows).
 - **Coordinates**: groupId `com.pfe`, base package `com.pfe.back`, main class `com.pfe.back.PfeBackApplication`.
-- **Starters**: `data-jpa`, `security`, `validation`, **`webmvc`** (Boot 4 renamed `-web` → `-webmvc`; test starters mirror this), `devtools`, `lombok`. Both **H2** and **MySQL** drivers are on the classpath.
+- **Starters**: `data-jpa`, `security`, `validation`, **`webmvc`** (Boot 4 renamed `-web` → `-webmvc`; test starters mirror this), **`mail`** (SMTP for onboarding emails), `devtools`, `lombok`. Both **H2** and **MySQL** drivers are on the classpath.
 - **DB**: defaults to **MySQL** at `localhost:3306/devsecops` (with `createDatabaseIfNotExist=true`). The H2 block is kept commented in `application.properties` for quick swaps. In Docker, the backend points at the `mysql` service on the compose network via `SPRING_DATASOURCE_URL`.
 - **Configuration** (`application.properties`): every value uses `${ENV_VAR:default}` placeholder syntax so env vars can override it. **Env vars are the single source of truth in Docker** — compose injects:
   - `SPRING_DATASOURCE_URL` (points at `mysql:3306`)
@@ -36,6 +48,9 @@ Manages **Docker images classified SAFE or UNSAFE**:
     - `APP_AZURE_TENANT_ID`, `APP_AZURE_CLIENT_ID`, `APP_AZURE_CLIENT_SECRET`, `APP_AZURE_SUBSCRIPTION_ID`, `APP_AZURE_RESOURCE_GROUP`
     - `APP_INFRA_POLL_ENABLED` (default `true`), `APP_INFRA_POLL_RG_SECONDS` (default `30`)
     - `APP_INFRA_WEBHOOK_SECRET` (must match the GitHub repo secret `INFRA_WEBHOOK_HMAC_SECRET`)
+  - **Email / SMTP** (all optional — leave `APP_MAIL_ENABLED=false` for log-only mode):
+    - `APP_MAIL_ENABLED` (default `false`), `APP_MAIL_FROM`, `APP_PUBLIC_URL` (portal link in emails)
+    - `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`
 - **Seed data**: `com.pfe.back.config.DataSeeder` (`CommandLineRunner`) populates 7 images, 6 pipeline runs, 5 alerts, 7 system nodes, and seed audit entries on first start. Idempotent (skips if `images.count() > 0`).
 - **Security**: `com.pfe.back.config.SecurityConfig` — **stateless JWT auth**. CSRF off, sessions off, CORS to `http://localhost:4200`. `/api/auth/login` and `/api/auth/register` are public; everything else under `/api/**` requires `Authorization: Bearer <token>`. The H2 console (`/h2-console/**`) is open in dev.
 - **Auth module**:
@@ -52,7 +67,7 @@ Manages **Docker images classified SAFE or UNSAFE**:
 - `com.pfe.back.entity` — JPA entities: `DockerImage`, `PipelineRun`, `SecurityAlert`, `SystemNode`, `Deployment`, `AuditLog`, **`User`**; enums `ImageStatus`, `PipelineStatus`, `AlertSeverity`, **`Role` (`CLOUD_ADMIN`)**.
 - `com.pfe.back.repository` — `JpaRepository<T, ID>` (e.g. `DockerImageRepository.findByStatusOrderByScannedAtDesc`, `UserRepository.findByUsername`).
 - `com.pfe.back.security` — `JwtService` (HMAC-SHA-512), `JwtAuthFilter` (`OncePerRequestFilter` registered before `UsernamePasswordAuthenticationFilter`).
-- `com.pfe.back.service` — `@Service` + `@RequiredArgsConstructor` (`DeploymentService`, `DashboardService`, `AuditLogService`, **`AuthService`**).
+- `com.pfe.back.service` — `@Service` + `@RequiredArgsConstructor` (`DeploymentService`, `DashboardService`, `AuditLogService`, **`AuthService`**, **`ApplicationService`**, **`MailService`**).
 - `com.pfe.back.controller` — `@RestController` under `/api/...`. Existing endpoints:
   - `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/me`
   - `GET /api/dashboard/stats`
@@ -62,6 +77,10 @@ Manages **Docker images classified SAFE or UNSAFE**:
   - `GET /api/infrastructure/nodes`, `/api/infrastructure/health`
   - `GET /api/deployments`, `POST /api/deployments/images/{imageId}` (body: `DeployRequest`)
   - `GET /api/audit/logs`
+  - **Application onboarding** (see "Application onboarding" below):
+    - `POST /api/applications` — **public** (developers submit a request without logging in)
+    - `GET /api/applications`, `GET /api/applications/pending`, `GET /api/applications/{id}`
+    - `POST /api/applications/{id}/approve`, `POST /api/applications/{id}/reject`
   - **Real-time Azure infra sync** (see "Real-time Azure infra sync" below):
     - `GET /api/infra/resources?type=&rg=&state=&q=&page=&size=` — paginated search
     - `GET /api/infra/resources/{id}`, `GET /api/infra/resources/{id}/history`

@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/applications").permitAll()
                 .requestMatchers("/api/azure/events").permitAll()
                 .requestMatchers("/api/infra/sync/trigger").permitAll()
                 .requestMatchers("/ws/**").permitAll()

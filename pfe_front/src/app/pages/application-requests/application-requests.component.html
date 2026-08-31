@@ -1,0 +1,151 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-end gap-4 justify-between">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">Application Requests</h1>
+      <p class="muted text-sm">
+        Pending onboarding requests awaiting admin review. Approving registers the
+        Azure resources and issues integration credentials.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a routerLink="/applications" class="btn">All Applications</a>
+      <button class="btn" (click)="refresh()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </div>
+
+  @if (message(); as m) {
+    <div class="rounded-md border px-3 py-2 text-sm"
+         [style.border-color]="m.type === 'ok' ? 'var(--safe)' : 'var(--unsafe)'"
+         [style.color]="m.type === 'ok' ? 'var(--safe)' : 'var(--unsafe)'"
+         [style.background]="'color-mix(in srgb, ' + (m.type === 'ok' ? 'var(--safe)' : 'var(--unsafe)') + ' 10%, transparent)'">
+      {{ m.text }}
+    </div>
+  }
+
+  <!-- Pending cards -->
+  @if (pending().length) {
+    <div class="grid gap-4 md:grid-cols-2">
+      @for (a of pending(); track a.id) {
+        <div class="card p-4 space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-lg">{{ a.name }}</div>
+              <div class="muted text-xs mono">{{ a.repositoryUrl || '—' }}</div>
+            </div>
+            <span class="badge badge-warn">PENDING</span>
+          </div>
+
+          <p class="text-sm muted">{{ a.description || 'No description' }}</p>
+
+          <div class="text-sm">
+            <div class="field-label">Requested Resources</div>
+            <ul class="mt-1 space-y-1">
+              <li>✓ {{ a.deploymentType }}</li>
+              @if (a.needsContainerRegistry) { <li>✓ Azure Container Registry</li> }
+              @if (a.database === 'POSTGRESQL') { <li>✓ PostgreSQL</li> }
+              @if (a.needsKeyVault) { <li>✓ Key Vault</li> }
+              <li class="muted">Environment: {{ a.environment }}</li>
+            </ul>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button class="btn btn-primary" (click)="review(a)">Review</button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="card p-8 text-center muted">
+      No pending requests. 🎉
+    </div>
+  }
+</div>
+
+<!-- Review drawer -->
+@if (selected(); as a) {
+  <div class="drawer-backdrop" (click)="close()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true">
+    <header class="drawer-head">
+      <div class="min-w-0">
+        <div class="text-xs muted">Review request</div>
+        <div class="text-lg font-semibold truncate">{{ a.name }}</div>
+      </div>
+      <span class="badge" [class]="a.status === 'READY' ? 'badge-success' : a.status === 'REJECTED' ? 'badge-failed' : 'badge-warn'">
+        {{ a.status }}
+      </span>
+      <button type="button" class="btn btn-icon" (click)="close()" title="Close">✕</button>
+    </header>
+
+    <div class="drawer-body space-y-5">
+      <section>
+        <div class="field-label">General</div>
+        <dl class="kv">
+          <dt>Description</dt><dd>{{ a.description || '—' }}</dd>
+          <dt>Team</dt><dd>{{ a.team || '—' }}</dd>
+          <dt>Repository</dt><dd class="mono text-xs">{{ a.repositoryUrl || '—' }}</dd>
+          <dt>Contact</dt><dd class="mono text-xs">{{ a.contactEmail || '—' }}</dd>
+          <dt>Requested</dt><dd class="mono text-xs">{{ a.createdAt | date:'medium' }}</dd>
+        </dl>
+      </section>
+
+      <section>
+        <div class="field-label">Requested Infrastructure</div>
+        <ul class="text-sm space-y-1 mt-1">
+          <li>✓ Deployment: <span class="mono">{{ a.deploymentType }}</span></li>
+          @if (a.needsContainerRegistry) { <li>✓ Azure Container Registry</li> }
+          @if (a.database === 'POSTGRESQL') { <li>✓ PostgreSQL</li> }
+          @if (a.needsKeyVault) { <li>✓ Key Vault</li> }
+          <li class="muted">Environment: {{ a.environment }}</li>
+        </ul>
+      </section>
+
+      @if (a.status === 'PENDING') {
+        <section>
+          <div class="field-label">Resources that will be registered on approval</div>
+          <ul class="mt-1 space-y-1">
+            @for (r of resourcePreview(a); track r) {
+              <li class="mono text-xs">• {{ r }}</li>
+            }
+          </ul>
+          <p class="muted text-xs mt-2">Provisioning is simulated — no Terraform run.</p>
+        </section>
+
+        <section class="space-y-2">
+          <div class="field-label">Decision</div>
+          <div class="flex gap-2">
+            <button class="btn btn-primary" (click)="approve(a)" [disabled]="busyId() === a.id">
+              {{ busyId() === a.id ? 'Working…' : '✓ Approve' }}
+            </button>
+          </div>
+          <div>
+            <label class="text-xs muted">Rejection reason (optional)</label>
+            <input class="input w-full" [(ngModel)]="rejectReason" placeholder="Why is this being rejected?" />
+          </div>
+          <button class="btn btn-danger" (click)="reject(a)" [disabled]="busyId() === a.id">✕ Reject</button>
+        </section>
+      }
+
+      @if (a.status === 'READY') {
+        <section>
+          <div class="field-label">Integration Credentials</div>
+          <dl class="kv">
+            <dt>Application ID</dt><dd class="mono">{{ a.applicationCode }}</dd>
+            <dt>Integration Token</dt><dd class="mono text-xs break-all">{{ a.integrationToken }}</dd>
+          </dl>
+        </section>
+        <section>
+          <div class="field-label">Registered Azure Resources ({{ a.resources.length }})</div>
+          <ul class="mt-1 space-y-1">
+            @for (r of a.resources; track r.id) {
+              <li class="mono text-xs">• {{ r.resourceType }} → {{ r.identifier }}</li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  </aside>
+}
+
